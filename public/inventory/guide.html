@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory Workflow — Setup Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #06060c; --surf: #0c0c16; --elev: #12121f; --border: #1e1e32;
+  --text: #e8e8f4; --dim: #7a7a9e; --muted: #4a4a6a; --accent: #f5c842;
+  --accent-dim: rgba(245,200,66,0.10); --crit: #ff5252; --crit-bg: rgba(255,82,82,0.08);
+  --hi: #ff8a65; --hi-bg: rgba(255,138,101,0.08); --med: #f5c842;
+  --watch: #64b5f6; --watch-bg: rgba(100,181,246,0.08);
+  --low: #6bcf97; --low-bg: rgba(107,207,151,0.08);
+  --mono: 'JetBrains Mono', monospace; --serif: 'Instrument Serif', serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:var(--mono); font-size:13px; line-height:1.75; }
+body::before { content:''; position:fixed; top:-30%; left:-15%; width:70%; height:70%; background:radial-gradient(ellipse, rgba(245,200,66,0.02) 0%, transparent 70%); pointer-events:none; }
+
+.page { max-width:780px; margin:0 auto; padding:48px 28px 120px; position:relative; z-index:1; }
+
+/* Header */
+.hero { margin-bottom:56px; }
+.hero h1 { font-family:var(--serif); font-size:3.2rem; font-weight:400; color:var(--accent); line-height:1.05; letter-spacing:-0.03em; margin-bottom:12px; }
+.hero .sub { color:var(--dim); font-size:11px; letter-spacing:0.06em; line-height:1.6; }
+.hero .sub strong { color:var(--text); font-weight:600; }
+
+/* Phase blocks */
+.phase { margin-bottom:48px; }
+.phase-header { display:flex; align-items:center; gap:14px; margin-bottom:20px; }
+.phase-num { width:36px; height:36px; border-radius:50%; background:var(--accent); color:var(--bg); font-family:var(--serif); font-size:1.3rem; display:flex; align-items:center; justify-content:center; font-weight:400; flex-shrink:0; }
+.phase-title { font-family:var(--serif); font-size:1.5rem; font-weight:400; color:var(--text); }
+.phase-time { font-size:10px; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; margin-left:auto; white-space:nowrap; }
+
+/* Steps */
+.step { background:var(--surf); border:1px solid var(--border); border-radius:10px; padding:20px 22px; margin-bottom:12px; position:relative; }
+.step::before { content:attr(data-step); position:absolute; top:20px; right:20px; font-size:9px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; }
+.step h4 { font-size:12px; font-weight:600; color:var(--accent); margin-bottom:8px; letter-spacing:0.03em; }
+.step p { color:var(--dim); font-size:12px; line-height:1.7; }
+.step p strong { color:var(--text); font-weight:500; }
+
+/* Code blocks */
+.code { background:var(--elev); border:1px solid var(--border); border-radius:6px; padding:12px 16px; margin:10px 0; font-size:11px; color:var(--accent); overflow-x:auto; white-space:pre; line-height:1.6; }
+.code .c { color:var(--muted); }
+.code .v { color:var(--low); }
+.code .k { color:var(--hi); }
+
+/* Path indicator */
+.path { display:inline-flex; align-items:center; gap:6px; background:var(--elev); border:1px solid var(--border); border-radius:5px; padding:3px 10px; font-size:10px; color:var(--dim); margin:2px 0; }
+.path .arrow { color:var(--muted); }
+
+/* Callout boxes */
+.callout { border-radius:8px; padding:14px 18px; margin:14px 0; font-size:11px; line-height:1.7; }
+.callout-warn { background:var(--crit-bg); border:1px solid rgba(255,82,82,0.2); color:var(--crit); }
+.callout-tip { background:var(--accent-dim); border:1px solid rgba(245,200,66,0.2); color:var(--accent); }
+.callout-info { background:var(--watch-bg); border:1px solid rgba(100,181,246,0.15); color:var(--watch); }
+.callout-ok { background:var(--low-bg); border:1px solid rgba(107,207,151,0.2); color:var(--low); }
+.callout strong { font-weight:700; }
+
+/* Visual diagram blocks */
+.flow { display:flex; align-items:center; gap:0; margin:16px 0; flex-wrap:wrap; justify-content:center; }
+.flow-node { background:var(--elev); border:1px solid var(--border); border-radius:6px; padding:8px 14px; font-size:10px; color:var(--text); text-align:center; min-width:90px; }
+.flow-node.highlight { border-color:var(--accent); color:var(--accent); }
+.flow-arrow { color:var(--muted); font-size:16px; padding:0 6px; flex-shrink:0; }
+
+/* Severity reference */
+.sev-table { width:100%; border-collapse:collapse; margin:12px 0; font-size:11px; }
+.sev-table th { text-align:left; padding:8px 10px; font-size:9px; color:var(--accent); letter-spacing:0.1em; text-transform:uppercase; border-bottom:1px solid var(--border); }
+.sev-table td { padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.03); }
+.sev-badge { padding:2px 8px; border-radius:3px; font-size:9px; font-weight:700; letter-spacing:0.06em; }
+.sev-CRITICAL { background:var(--crit-bg); color:var(--crit); }
+.sev-HIGH { background:var(--hi-bg); color:var(--hi); }
+.sev-MEDIUM { background:rgba(245,200,66,0.1); color:var(--med); }
+.sev-WATCH { background:var(--watch-bg); color:var(--watch); }
+.sev-LOW { background:var(--low-bg); color:var(--low); }
+
+/* Divider */
+.divider { border:none; border-top:1px solid var(--border); margin:40px 0; }
+
+/* Footer */
+.footer { text-align:center; color:var(--muted); font-size:10px; margin-top:60px; padding-top:24px; border-top:1px solid var(--border); }
+
+/* Links */
+a { color:var(--accent); text-decoration:none; }
+a:hover { text-decoration:underline; }
+
+/* Responsive */
+@media (max-width:600px) {
+  .hero h1 { font-size:2.2rem; }
+  .phase-time { display:none; }
+  .flow { flex-direction:column; }
+  .flow-arrow { transform:rotate(90deg); }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hero">
+    <h1>Setup &amp; Operations Guide</h1>
+    <div class="sub">
+      <strong>H.Wood Inventory Workflow</strong> — Automated variance tracking across all venues.<br>
+      This guide walks you through first-time setup, daily operations, and the automated engine.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- OVERVIEW -->
+  <!-- ═══════════════════════════════════════════ -->
+
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num" style="background:var(--watch);color:var(--bg);">&#8505;</div>
+      <div class="phase-title">How It Works</div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-node">Slack Messages<br><span style="font-size:9px;color:var(--muted)">staff reports</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node highlight">GPT-4o-mini<br><span style="font-size:9px;color:var(--muted)">parses issues</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">Cross-Reference<br><span style="font-size:9px;color:var(--muted)">+ Craftable data</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node highlight">Severity Score<br><span style="font-size:9px;color:var(--muted)">auto-scored</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">Recount CSV<br><span style="font-size:9px;color:var(--muted)">for count team</span></div>
+    </div>
+
+    <div class="step">
+      <p>The system takes two data sources — <strong>Slack messages</strong> from your counting teams and <strong>Craftable variance reports</strong> — merges them, fuzzy-matches products, scores severity, and produces a <strong>recount decision list</strong> the counting team can act on immediately.</p>
+      <p style="margin-top:8px;">Everything runs in the browser. Your API keys stay in your browser's local storage — nothing is sent to any server except the Craftable API and GitHub Models API directly.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PHASE 1: FIRST-TIME SETUP -->
+  <!-- ═══════════════════════════════════════════ -->
+
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">1</div>
+      <div class="phase-title">First-Time Setup</div>
+      <div class="phase-time">~10 minutes</div>
+    </div>
+
+    <div class="step" data-step="1A">
+      <h4>Deploy to GitHub Pages</h4>
+      <p>Create a new repo on GitHub and upload the <strong>index.html</strong> file.</p>
+      <div class="code"><span class="c"># From your terminal or just drag-drop in GitHub</span>
+git init inventory-workflow
+cd inventory-workflow
+<span class="c"># Add index.html to this folder</span>
+git add .
+git commit -m "Deploy"
+git branch -M main
+git remote add origin <span class="v">https://github.com/YOUR_USER/inventory-workflow.git</span>
+git push -u origin main</div>
+      <p>Then in your GitHub repo:</p>
+      <p><span class="path">Settings <span class="arrow">→</span> Pages <span class="arrow">→</span> Source: main / root <span class="arrow">→</span> Save</span></p>
+      <p style="margin-top:8px;">Your app will be live at <strong>https://YOUR_USER.github.io/inventory-workflow/</strong></p>
+    </div>
+
+    <div class="step" data-step="1B">
+      <h4>Add Your GitHub Token</h4>
+      <p>This powers the AI parsing of Slack messages via GPT-4o-mini. Uses your existing GitHub account.</p>
+      <p style="margin-top:6px;">1. Go to <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a><br>
+      2. Click <strong>Generate new token (classic)</strong><br>
+      3. No special scopes needed — just create it and copy the token (starts with <code style="color:var(--accent)">ghp_...</code>)</p>
+      <p style="margin-top:6px;">In the app:</p>
+      <p><span class="path">Settings tab <span class="arrow">→</span> GitHub Token <span class="arrow">→</span> Paste <span class="arrow">→</span> Save</span></p>
+    </div>
+
+    <div class="step" data-step="1C">
+      <h4>Add Your Craftable API Key</h4>
+      <p>This connects to Craftable for automated variance pulls.</p>
+      <p style="margin-top:6px;">In the app:</p>
+      <p><span class="path">Settings tab <span class="arrow">→</span> Craftable API section</span></p>
+      <p style="margin-top:6px;">Fill in:</p>
+      <div class="code"><span class="k">API Base URL:</span>  <span class="v">https://api.craftable.com/v1</span>
+<span class="k">API Key:</span>       <span class="v">PytYKiR0BdqOnhCIy_6sG0jhXO3FFBAPt_o82Bx</span>  <span class="c">(your actual key)</span>
+<span class="k">Auth Method:</span>   <span class="v">Authorization: Bearer &lt;key&gt;</span>  <span class="c">(try this first)</span></div>
+      <p>Click <strong>Save API Config</strong>.</p>
+      <div class="callout callout-tip"><strong>Not sure about the auth method?</strong> Try Bearer first. If the API Explorer shows 401/403 errors, switch to X-API-Key, then query param.</div>
+    </div>
+
+    <div class="step" data-step="1D">
+      <h4>Discover API Endpoints</h4>
+      <p>This is the critical step — it scans the Craftable API and auto-configures which endpoints to use.</p>
+      <p><span class="path">API Explorer tab</span></p>
+      <p style="margin-top:6px;">Click the 4 buttons in order:</p>
+      <div class="code"><span class="k">1.</span> <span class="v">Discover Endpoints</span>  <span class="c">— scans swagger spec, finds all API paths</span>
+<span class="k">2.</span> <span class="v">Test Auth</span>           <span class="c">— verifies your key works</span>
+<span class="k">3.</span> <span class="v">List Locations</span>     <span class="c">— pulls your venues from Craftable, syncs them</span>
+<span class="k">4.</span> <span class="v">Test Variance</span>      <span class="c">— pulls a sample variance report, shows data structure</span></div>
+      <p style="margin-top:8px;">The log window shows everything happening in real-time. Green = success, red = error.</p>
+
+      <div class="callout callout-warn"><strong>If you see CORS errors:</strong> This means Craftable's API doesn't allow browser-to-API calls from your GitHub Pages domain. Two solutions:<br><br>
+      <strong>Option A:</strong> Use "Import CSV" on the Craftable tab — export variance from Craftable's web UI and upload it.<br>
+      <strong>Option B:</strong> Open the Swagger UI directly at <code>api.craftable.com/v1/swagger-ui/index.html</code>, look at the endpoint names, and type them manually into <span class="path">Settings <span class="arrow">→</span> Discovered Endpoints</span>.</div>
+
+      <div class="callout callout-info"><strong>What the endpoints look like:</strong> After discovery, go to <span class="path">Settings <span class="arrow">→</span> Discovered Endpoints</span>. You should see something like:<br><br>
+      <code>Locations: /locations</code> or <code>/establishments</code><br>
+      <code>Variance: /variance</code> or <code>/reports/variance</code><br>
+      <code>Products: /products</code> or <code>/items</code><br><br>
+      If the auto-discovery missed one, type it in manually from the Swagger UI.</div>
+    </div>
+
+    <div class="step" data-step="1E">
+      <h4>Enable Automation</h4>
+      <p>Set the system to auto-pull from Craftable on a schedule.</p>
+      <p><span class="path">Settings tab <span class="arrow">→</span> Automation section</span></p>
+      <div class="code"><span class="k">Pull Interval:</span>   <span class="v">Every 30 minutes</span>  <span class="c">(recommended for count days)</span>
+<span class="k">Min Variance $:</span>  <span class="v">50</span>              <span class="c">(skip items below this)</span></div>
+      <p>Click <strong>Save & Start</strong>. The green pulsing dot in the header confirms it's running.</p>
+      <div class="callout callout-tip"><strong>The auto-pull runs while the browser tab is open.</strong> Keep it open on a counting day and it will refresh data every 30 minutes automatically. The Recount Report tab updates live.</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PHASE 2: DAILY OPERATIONS -->
+  <!-- ═══════════════════════════════════════════ -->
+
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">2</div>
+      <div class="phase-title">Daily Operations</div>
+      <div class="phase-time">Count Day Workflow</div>
+    </div>
+
+    <div class="step" data-step="2A">
+      <h4>Parse Slack Messages</h4>
+      <p>As counting teams post messages in their Slack channels, paste them into the app.</p>
+      <p><span class="path">Parse tab <span class="arrow">→</span> Select venue <span class="arrow">→</span> Paste messages <span class="arrow">→</span> Parse & Add Issues</span></p>
+      <p style="margin-top:8px;">The AI extracts:</p>
+      <div class="code"><span class="v">Product name</span>      Patrón Silver 750ml
+<span class="v">Issue type</span>        Missing, Damaged, No Sticker, Not Scanning, etc.
+<span class="v">Quantity</span>          3 bottles
+<span class="v">Location</span>          Back Bar, Walk-In, Service Well, etc.
+<span class="v">Notes</span>             Brief summary of the issue</div>
+      <p style="margin-top:8px;">You can paste messages from <strong>multiple staff members at once</strong> — the AI handles multi-message parsing.</p>
+    </div>
+
+    <div class="step" data-step="2B">
+      <h4>Adding New Venues On-the-Fly</h4>
+      <p>If you need a venue that's not in the list:</p>
+      <p><span class="path">Parse tab <span class="arrow">→</span> Click "+ New" <span class="arrow">→</span> Type name <span class="arrow">→</span> Add</span></p>
+      <p style="margin-top:6px;">Or add in bulk:</p>
+      <p><span class="path">Settings tab <span class="arrow">→</span> Venues <span class="arrow">→</span> Type name <span class="arrow">→</span> + Add</span></p>
+      <p style="margin-top:6px;">The pre-loaded venues match your current H.Wood locations: Bird Streets Club, Delilah - LA, Deliliah - Miami, Keys, Poppy, The Nice Guy.</p>
+    </div>
+
+    <div class="step" data-step="2C">
+      <h4>Pull Craftable Variance</h4>
+      <p>If automation is running, this happens automatically. To pull manually:</p>
+      <p><span class="path">Craftable tab <span class="arrow">→</span> Select venue (or All) <span class="arrow">→</span> Set min variance <span class="arrow">→</span> Pull Now</span></p>
+      <p style="margin-top:6px;"><strong>If using CSV import instead:</strong></p>
+      <p><span class="path">Craftable tab <span class="arrow">→</span> Import CSV <span class="arrow">→</span> Select your Craftable export file</span></p>
+      <p style="margin-top:6px;">The system auto-detects columns from the CSV (product name, variance $, variance %, category, store).</p>
+    </div>
+
+    <div class="step" data-step="2D">
+      <h4>Review Recount Report</h4>
+      <p>This is the main output — where the counting team gets their action list.</p>
+      <p><span class="path">Recount tab</span></p>
+      <p style="margin-top:8px;"><strong>Dashboard:</strong> Shows total issues, recount count, critical count, total variance.</p>
+      <p style="margin-top:6px;"><strong>Filters:</strong> Narrow by venue, severity, or "Recount Needed" only.</p>
+      <p style="margin-top:6px;"><strong>Sort:</strong> Click any column header to sort. Click again to reverse.</p>
+      <p style="margin-top:6px;"><strong>What the columns mean:</strong></p>
+      <div class="code"><span class="v">Venue</span>            Which H.Wood location
+<span class="v">Product</span>          Item name (+ Craftable match status underneath)
+<span class="v">Issue</span>            Missing, Damaged, No Sticker, Unknown variance, etc.
+<span class="v">Location</span>         Where in the venue (Back Bar, Walk-In, etc.)
+<span class="v">Qty</span>              Bottles short
+<span class="v">Var $</span>            Dollar variance from Craftable (<span class="k">red = negative</span>)
+<span class="v">Wks</span>              How many weeks this item has been flagged
+<span class="v">Severity</span>         Auto-scored (see reference below)
+<span class="v">Recount?</span>         <span class="k">RECOUNT</span> = team needs to verify this item</div>
+    </div>
+
+    <div class="step" data-step="2E">
+      <h4>Export for the Counting Team</h4>
+      <p>Two export formats:</p>
+      <p style="margin-top:6px;"><strong>Recount CSV</strong> — Streamlined. Only items that need recounting. Includes a summary footer with totals per venue. Give this to the counting team.</p>
+      <p><span class="path">Recount tab <span class="arrow">→</span> ↓ Recount CSV</span></p>
+      <p style="margin-top:10px;"><strong>Full CSV</strong> — Everything. All items, all columns including SKU, category, repeat status, Craftable match confidence, timestamps. For your own records or deeper analysis.</p>
+      <p><span class="path">Recount tab <span class="arrow">→</span> ↓ Full CSV</span></p>
+      <div class="callout callout-ok"><strong>The Recount CSV opens cleanly in Excel.</strong> It includes a BOM header for proper character encoding, quoted fields to prevent comma issues, and a summary section at the bottom with per-venue breakdowns.</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PHASE 3: SEVERITY REFERENCE -->
+  <!-- ═══════════════════════════════════════════ -->
+
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">3</div>
+      <div class="phase-title">Severity &amp; Recount Logic</div>
+    </div>
+
+    <div class="step">
+      <h4>How Severity is Scored</h4>
+      <p>Items are auto-scored based on how long they've been flagged, whether they're still active, and the dollar variance from Craftable.</p>
+      <table class="sev-table">
+        <thead><tr><th>Severity</th><th>Criteria</th><th>Recount?</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="sev-badge sev-CRITICAL">CRITICAL</span></td>
+            <td style="color:var(--dim)">Active 10+ weeks, or active 5+ weeks with $200+ variance</td>
+            <td style="color:var(--crit);font-weight:600">Always</td>
+          </tr>
+          <tr>
+            <td><span class="sev-badge sev-HIGH">HIGH</span></td>
+            <td style="color:var(--dim)">Active 5+ weeks, or inactive 5+ weeks with $500+ variance</td>
+            <td style="color:var(--crit);font-weight:600">Always</td>
+          </tr>
+          <tr>
+            <td><span class="sev-badge sev-MEDIUM">MEDIUM</span></td>
+            <td style="color:var(--dim)">Active 3+ weeks, or active with variance above threshold</td>
+            <td style="color:var(--dim)">If variance ≥ $100 or weeks ≥ 3</td>
+          </tr>
+          <tr>
+            <td><span class="sev-badge sev-WATCH">WATCH</span></td>
+            <td style="color:var(--dim)">Active, flagged 2 weeks</td>
+            <td style="color:var(--muted)">No</td>
+          </tr>
+          <tr>
+            <td><span class="sev-badge sev-LOW">LOW</span></td>
+            <td style="color:var(--dim)">New items, or inactive with low variance</td>
+            <td style="color:var(--muted)">No</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout callout-tip"><strong>Thresholds are configurable.</strong> Go to <span class="path">Settings <span class="arrow">→</span> Recount Thresholds</span> to change the minimum variance $ and minimum weeks required for a MEDIUM item to trigger a recount.</div>
+    </div>
+
+    <div class="step">
+      <h4>How Cross-Referencing Works</h4>
+      <p>When Craftable data is pulled, the system fuzzy-matches each parsed issue against Craftable products. This handles the real-world typos in your data (like "Minuty Presige" matching to "Minuty Prestige", or "Mersault" matching "Meursault").</p>
+      <p style="margin-top:8px;">Each item gets a Craftable status:</p>
+      <div class="code"><span class="v">YES — In Craftable</span>          85%+ match confidence
+<span class="k">REVIEW — Low Confidence</span>      60-85% match (check manually)
+<span class="k">NOT IN CRAFTABLE</span>             No match found</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PHASE 4: TROUBLESHOOTING -->
+  <!-- ═══════════════════════════════════════════ -->
+
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">4</div>
+      <div class="phase-title">Troubleshooting</div>
+    </div>
+
+    <div class="step">
+      <h4>CORS Errors on Craftable API</h4>
+      <p>If the API Explorer shows "CORS or connectivity issue", the Craftable API server doesn't allow browser requests from your GitHub Pages domain.</p>
+      <p style="margin-top:8px;"><strong>Fix:</strong> Use the CSV import workflow instead. Export variance from Craftable's web dashboard, then upload it in the Craftable tab → Import CSV.</p>
+      <p style="margin-top:6px;">The cross-referencing, severity scoring, and recount flagging all work identically with imported CSV data.</p>
+    </div>
+
+    <div class="step">
+      <h4>401 Unauthorized / 403 Forbidden</h4>
+      <p>Your API key isn't being sent correctly.</p>
+      <p style="margin-top:6px;">Try switching the auth method in <span class="path">Settings <span class="arrow">→</span> Auth Method</span>:</p>
+      <div class="code"><span class="c">Try in this order:</span>
+1. Authorization: Bearer &lt;key&gt;   <span class="c">(most common)</span>
+2. X-API-Key: &lt;key&gt;              <span class="c">(some APIs use this)</span>
+3. ?api_key=&lt;key&gt;                <span class="c">(query parameter fallback)</span></div>
+    </div>
+
+    <div class="step">
+      <h4>AI Says "No Issues Found"</h4>
+      <p>The AI couldn't extract inventory issues from your text. Tips:</p>
+      <p style="margin-top:6px;">• Include <strong>product names</strong> and <strong>quantities</strong> in the messages<br>
+      • Mention specific issues: "missing", "damaged", "can't scan", "wrong label"<br>
+      • More context is better: "3 bottles of Patrón Silver missing from back bar" works much better than "Patrón short"</p>
+    </div>
+
+    <div class="step">
+      <h4>Data Disappeared After Closing Browser</h4>
+      <p>All data is stored in your browser's localStorage. It persists across sessions <strong>unless</strong> you clear your browser data, use incognito/private mode, or switch browsers/devices.</p>
+      <p style="margin-top:6px;"><strong>Best practice:</strong> Export your CSV at the end of each count day. The CSV is your permanent record.</p>
+    </div>
+
+    <div class="step">
+      <h4>Auto-Pull Stopped Working</h4>
+      <p>The auto-pull only runs while the browser tab is <strong>open and active</strong>. If you close the tab or put your laptop to sleep, it pauses.</p>
+      <p style="margin-top:6px;">Reopen the app and the green dot should re-appear. If not, go to <span class="path">Settings <span class="arrow">→</span> Automation <span class="arrow">→</span> Save & Start</span> to restart it.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- QUICK REFERENCE -->
+  <!-- ═══════════════════════════════════════════ -->
+
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num" style="background:var(--low);color:var(--bg);">&#10003;</div>
+      <div class="phase-title">Quick Reference</div>
+    </div>
+
+    <div class="step">
+      <h4>Count Day Checklist</h4>
+      <div class="code"><span class="v">□</span>  Open the app — verify green auto-pull dot is active
+<span class="v">□</span>  As Slack messages come in, paste them in Parse tab per venue
+<span class="v">□</span>  Click "Pull Now" on Craftable tab (or let auto-pull handle it)
+<span class="v">□</span>  Check Recount tab — filter to "Recount Needed"
+<span class="v">□</span>  Export Recount CSV → send to counting team
+<span class="v">□</span>  Export Full CSV → archive for your records</div>
+    </div>
+
+    <div class="step">
+      <h4>Tab Reference</h4>
+      <div class="code"><span class="k">Parse</span>        Paste Slack messages → AI extracts issues
+<span class="k">Recount</span>      Dashboard + table of all issues, filters, exports
+<span class="k">Craftable</span>    Pull or import Craftable variance data
+<span class="k">API Explorer</span> First-time setup: discover & test Craftable endpoints
+<span class="k">Settings</span>     API keys, venues, automation, thresholds, endpoints</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    H.Wood Inventory Workflow &middot; Single-file app &middot; GitHub Pages &middot; Zero backend
+  </div>
+
+</div>
+</body>
+</html>

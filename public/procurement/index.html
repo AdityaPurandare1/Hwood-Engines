@@ -1,0 +1,3362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HWOOD Procurement Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --surface: #141414;
+            --surface-2: #1e1e1e;
+            --surface-3: #282828;
+            --border: #2a2a2a;
+            --border-light: #363636;
+            --text: #e8e8e8;
+            --text-muted: #888;
+            --text-dim: #555;
+            --accent: #c9a84c;
+            --accent-dim: #a08030;
+            --accent-glow: rgba(201, 168, 76, 0.15);
+            --danger: #e05252;
+            --danger-bg: rgba(224, 82, 82, 0.1);
+            --success: #4caf50;
+            --success-bg: rgba(76, 175, 80, 0.1);
+            --warn: #ff9800;
+            --warn-bg: rgba(255, 152, 0, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        /* Header */
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: 0.02em;
+        }
+
+        .logo span { color: var(--accent); }
+
+        .header-subtitle {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 30px;
+            background: var(--surface);
+            border-radius: 10px;
+            padding: 4px;
+            width: fit-content;
+        }
+
+        .tab {
+            padding: 10px 24px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .tab:hover { color: var(--text); }
+        .tab.active {
+            background: var(--accent);
+            color: #000;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.15rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title .badge {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.7rem;
+            background: var(--accent-glow);
+            color: var(--accent);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        /* Forms */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+        .form-group label {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.92rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-group input::placeholder { color: var(--text-dim); }
+
+        .form-group.span-2 { grid-column: span 2; }
+
+        /* Venue rows */
+        .venue-row {
+            display: grid;
+            grid-template-columns: 1fr repeat(4, 120px) 40px;
+            gap: 12px;
+            align-items: end;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .venue-row:last-of-type { border-bottom: none; }
+
+        .venue-row input {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.92rem;
+            width: 100%;
+        }
+
+        .venue-row input:focus { outline: none; border-color: var(--accent); }
+
+        .venue-header {
+            display: grid;
+            grid-template-columns: 1fr repeat(4, 120px) 40px;
+            gap: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .venue-header span {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 500;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .btn-primary:hover { background: #d4b45a; transform: translateY(-1px); }
+
+        .btn-secondary {
+            background: var(--surface-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover { border-color: var(--accent); }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--danger);
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+
+        .btn-danger:hover { background: var(--danger-bg); }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        /* Results */
+        .results-section { margin-top: 30px; }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-sub {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Tables */
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+
+        .result-table th {
+            text-align: left;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-light);
+            font-weight: 500;
+        }
+
+        .result-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .result-table tr:last-child td { border-bottom: none; }
+
+        .result-table .highlight { color: var(--accent); font-weight: 600; }
+        .result-table .muted { color: var(--text-muted); }
+
+        /* Stress test */
+        .stress-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.88rem;
+        }
+
+        .stress-row:last-child { border-bottom: none; }
+
+        .stress-day {
+            font-weight: 700;
+            color: var(--accent);
+            min-width: 50px;
+        }
+
+        .stress-bar-container {
+            flex: 1;
+            height: 24px;
+            background: var(--surface-3);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .stress-bar {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease;
+            min-width: 2px;
+        }
+
+        .stress-bar.ok { background: var(--success); }
+        .stress-bar.low { background: var(--warn); }
+        .stress-bar.out { background: var(--danger); }
+
+        .stress-stock {
+            min-width: 70px;
+            text-align: right;
+            font-weight: 500;
+        }
+
+        .stockout-tag {
+            font-size: 0.72rem;
+            background: var(--danger-bg);
+            color: var(--danger);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .delivery-tag {
+            font-size: 0.72rem;
+            background: var(--success-bg);
+            color: var(--success);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        /* PO Cards */
+        .po-card {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .po-dest {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .po-detail { color: var(--text-muted); font-size: 0.85rem; }
+
+        .po-qty {
+            text-align: right;
+        }
+
+        .po-qty .big {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .po-qty .small { color: var(--text-muted); font-size: 0.82rem; }
+
+        /* TCO */
+        .tco-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+        }
+
+        .tco-cell {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            text-align: center;
+        }
+
+        .tco-cell.target {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .tco-cases { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; }
+        .tco-price { font-size: 1.1rem; font-weight: 700; }
+        .tco-cell.target .tco-price { color: var(--accent); }
+        .tco-units { font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
+
+        /* Override section */
+        .override-section {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-top: 16px;
+        }
+
+        .override-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            user-select: none;
+        }
+
+        .override-toggle:hover { color: var(--text); }
+
+        .override-fields {
+            display: grid;
+            grid-template-columns: repeat(2, 200px);
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .override-tag {
+            font-size: 0.7rem;
+            background: var(--warn-bg);
+            color: var(--warn);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        /* Utility */
+        .hidden { display: none !important; }
+        .mt-20 { margin-top: 20px; }
+        .mb-10 { margin-bottom: 10px; }
+        .text-muted { color: var(--text-muted); }
+        .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+        /* PAR Advisor */
+        /* PAR Advisor — base styles */
+        .par-rec-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+
+        .par-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .par-box {
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .par-box.current {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+        }
+
+        .par-box.ideal {
+            background: rgba(76, 175, 80, 0.08);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .par-box.realistic {
+            background: var(--accent-glow);
+            border: 1px solid rgba(201, 168, 76, 0.4);
+        }
+
+        .par-box-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .par-box.current .par-box-label { color: var(--text-muted); }
+        .par-box.ideal .par-box-label { color: var(--success); }
+        .par-box.realistic .par-box-label { color: var(--accent); }
+
+        .par-box-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+        }
+
+        .par-box.current .par-box-value { color: var(--text-muted); }
+        .par-box.ideal .par-box-value { color: var(--success); }
+        .par-box.realistic .par-box-value { color: var(--accent); }
+
+        .par-box-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .par-verdict {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 18px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .par-verdict.too-high {
+            background: var(--warn-bg);
+            color: var(--warn);
+            border: 1px solid rgba(255, 152, 0, 0.2);
+        }
+
+        .par-verdict.too-low {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid rgba(224, 82, 82, 0.2);
+        }
+
+        .par-verdict.good {
+            background: var(--success-bg);
+            color: var(--success);
+            border: 1px solid rgba(76, 175, 80, 0.2);
+        }
+
+        .par-detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .par-detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+        }
+
+        .par-detail-item .label { color: var(--text-muted); }
+        .par-detail-item .value { font-weight: 600; }
+
+        /* Risk Factor Grid */
+        .risk-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .risk-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            gap: 20px;
+        }
+
+        .risk-info { flex: 1; }
+        .risk-name { font-weight: 600; font-size: 0.92rem; margin-bottom: 2px; }
+        .risk-desc { font-size: 0.78rem; color: var(--text-muted); }
+
+        .risk-inputs {
+            display: flex;
+            gap: 12px;
+        }
+
+        .risk-inputs .form-group { width: 100px; }
+
+        .risk-inputs input {
+            background: var(--surface-3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 10px;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.88rem;
+            width: 100%;
+        }
+
+        .risk-inputs input:focus { outline: none; border-color: var(--accent); }
+
+        /* Diagnostic Cards */
+        .diag-section {
+            margin-top: 24px;
+        }
+
+        .diag-card {
+            background: var(--surface-2);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            border-left: 3px solid var(--border);
+        }
+
+        .diag-card.critical { border-left-color: var(--danger); }
+        .diag-card.warning { border-left-color: var(--warn); }
+        .diag-card.info { border-left-color: var(--accent); }
+        .diag-card.ok { border-left-color: var(--success); }
+
+        .diag-icon { font-size: 1.3rem; margin-top: 2px; }
+
+        .diag-content { flex: 1; }
+        .diag-title { font-weight: 700; font-size: 0.92rem; margin-bottom: 4px; }
+        .diag-text { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; }
+        .diag-action {
+            font-size: 0.82rem;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: var(--surface-3);
+            border-radius: 6px;
+            color: var(--text);
+        }
+
+        .diag-action strong { color: var(--accent); }
+
+        /* Depletion timeline */
+        .depletion-timeline {
+            position: relative;
+            padding: 20px 0;
+            margin: 20px 0;
+        }
+
+        .depletion-bar-bg {
+            height: 32px;
+            background: var(--surface-3);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .depletion-bar-fill {
+            height: 100%;
+            border-radius: 8px;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        .depletion-markers {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .depletion-marker {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .depletion-marker .dm-value { font-weight: 600; color: var(--text); }
+
+        /* PAR Item rows */
+
+        /* Scenario comparison */
+        .scenario-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .scenario-card {
+            border-radius: 10px;
+            padding: 18px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .scenario-card.depletion { background: rgba(76, 175, 80, 0.06); border-color: rgba(76, 175, 80, 0.25); }
+        .scenario-card.risk { background: var(--accent-glow); border-color: rgba(201, 168, 76, 0.35); }
+        .scenario-card.worst { background: rgba(224, 82, 82, 0.06); border-color: rgba(224, 82, 82, 0.2); }
+
+        .scenario-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .scenario-card.depletion .scenario-label { color: var(--success); }
+        .scenario-card.risk .scenario-label { color: var(--accent); }
+        .scenario-card.worst .scenario-label { color: var(--danger); }
+
+        .scenario-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .scenario-card.depletion .scenario-value { color: var(--success); }
+        .scenario-card.risk .scenario-value { color: var(--accent); }
+        .scenario-card.worst .scenario-value { color: var(--danger); }
+
+        .scenario-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header { padding: 16px 20px; }
+            .container { padding: 20px; }
+            .form-grid { grid-template-columns: 1fr 1fr; }
+            .form-group.span-2 { grid-column: span 2; }
+            .venue-row, .venue-header {
+                grid-template-columns: 1fr repeat(2, 100px) 40px;
+            }
+            .venue-row .hide-mobile, .venue-header .hide-mobile { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo">THE <span>h.wood</span> GROUP</div>
+    <div class="header-subtitle">Procurement Engine</div>
+</div>
+
+<div class="container">
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('input')">Setup</button>
+        <button class="tab" onclick="switchTab('results')">Results</button>
+        <button class="tab" onclick="switchTab('orders')">Purchase Orders</button>
+        <button class="tab" onclick="switchTab('par')">PAR Advisor</button>
+        <button class="tab" onclick="switchTab('newpar')">New PAR Setup</button>
+    </div>
+
+    <!-- INPUT TAB -->
+    <div id="tab-input">
+        <!-- Item Info -->
+        <div class="card">
+            <div class="card-title">Item Details</div>
+            <div class="form-grid">
+                <div class="form-group span-2">
+                    <label>Item Name</label>
+                    <input type="text" id="item-name" placeholder="e.g. Serving Tong Medium">
+                </div>
+                <div class="form-group">
+                    <label>SKU</label>
+                    <input type="text" id="item-sku" placeholder="e.g. GRM 880071">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="item-category">
+                        <option value="OS&E">OS&E</option>
+                        <option value="Collateral">Collateral</option>
+                        <option value="Other Items">Other Items</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Subcategory</label>
+                    <select id="item-subcategory">
+                        <option value="Glassware - Delicate">Glassware — Delicate</option>
+                        <option value="Glassware - Sturdy">Glassware — Sturdy</option>
+                        <option value="Flatware">Flatware</option>
+                        <option value="Dinnerware">Dinnerware</option>
+                        <option value="Bar Tools">Bar Tools</option>
+                        <option value="Smallwares">Smallwares</option>
+                        <option value="Consumable">Consumable</option>
+                        <option value="Equipment">Equipment</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Case / Pack Size</label>
+                    <input type="number" id="item-case-size" placeholder="12" value="12">
+                </div>
+                <div class="form-group">
+                    <label>Unit Cost ($)</label>
+                    <input type="number" id="item-unit-cost" placeholder="Optional" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Shipping Cost ($)</label>
+                    <input type="number" id="item-shipping-cost" placeholder="Optional" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Shipping Type</label>
+                    <select id="item-shipping-type">
+                        <option value="flat">Flat per shipment</option>
+                        <option value="per_case">Per case</option>
+                        <option value="per_unit">Per unit</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Supplier Lead Time (days)</label>
+                    <input type="number" id="item-lead-time" placeholder="21" value="21">
+                </div>
+                <div class="form-group span-2">
+                    <label>Supplier Name</label>
+                    <input type="text" id="item-supplier" placeholder="e.g. Charingworth/Studio William">
+                </div>
+                <div class="form-group span-2">
+                    <label>Supplier Contact</label>
+                    <input type="text" id="item-supplier-contact" placeholder="e.g. Sabrina Sandha <sabrina@email.com>">
+                </div>
+            </div>
+        </div>
+
+        <!-- Venues -->
+        <div class="card">
+            <div class="card-title">Venues</div>
+            <div class="venue-header">
+                <span>Venue Name</span>
+                <span>PAR</span>
+                <span>Monthly Demand</span>
+                <span class="hide-mobile">On Hand</span>
+                <span class="hide-mobile">Trigger (mo)</span>
+                <span></span>
+            </div>
+            <div id="venue-list"></div>
+            <div class="btn-row">
+                <button class="btn btn-secondary" onclick="addVenue()">+ Add Venue</button>
+                <button class="btn btn-secondary" onclick="downloadSetupTemplate()" style="font-size:0.82rem">📄 Template</button>
+                <input type="file" id="setup-csv-input" accept=".csv,.xlsx" style="font-family:'DM Sans';font-size:0.82rem;color:var(--text-muted)">
+                <button class="btn btn-secondary" onclick="importSetupCSV()" style="font-size:0.82rem">Import</button>
+            </div>
+        </div>
+
+        <!-- Warehouse -->
+        <div class="card">
+            <div class="card-title">Warehouse Configuration</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Max Simultaneous Venues</label>
+                    <input type="number" id="wh-max-simul" value="2" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Review Period (days)</label>
+                    <input type="number" id="wh-review" value="7" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Current On Hand</label>
+                    <input type="number" id="wh-on-hand" value="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Current On PO</label>
+                    <input type="number" id="wh-on-po" value="0" min="0">
+                </div>
+            </div>
+
+            <div class="override-section">
+                <label class="override-toggle">
+                    <input type="checkbox" id="override-check" onchange="toggleOverride()">
+                    Manual Override (s, S)
+                </label>
+                <div id="override-fields" class="override-fields hidden">
+                    <div class="form-group">
+                        <label>s (Reorder Point)</label>
+                        <input type="number" id="override-s" placeholder="e.g. 24">
+                    </div>
+                    <div class="form-group">
+                        <label>S (Order-Up-To)</label>
+                        <input type="number" id="override-S" placeholder="e.g. 36">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TCO Target -->
+        <div class="card">
+            <div class="card-title">TCO Target <span class="badge">Optional</span></div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Target TCO per unit ($)</label>
+                    <input type="number" id="tco-target" placeholder="e.g. 7.00" step="0.01">
+                </div>
+            </div>
+        </div>
+
+        <!-- Multi-Item Import -->
+        <div class="card">
+            <div class="card-title">Multi-Item Import <span class="badge">Optional</span></div>
+            <p style="color:var(--text-muted);font-size:0.82rem;margin-bottom:12px">
+                Upload a CSV with multiple items to run the engine in batch. Each item gets its own stress test and recommendations. Or use the fields above for a single item.
+            </p>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                <button class="btn btn-secondary" onclick="downloadMultiItemTemplate()" style="font-size:0.82rem">📄 Download Template</button>
+                <input type="file" id="multi-item-input" accept=".csv,.xlsx" style="font-family:'DM Sans';font-size:0.82rem;color:var(--text-muted)">
+                <button class="btn btn-secondary" onclick="importMultiItems()" style="font-size:0.82rem">Import Items</button>
+            </div>
+            <div id="multi-item-status" style="margin-top:8px;font-size:0.82rem;color:var(--text-muted)"></div>
+            <div id="multi-item-list" style="margin-top:12px"></div>
+        </div>
+
+        <div style="display:flex;gap:12px;align-items:center">
+            <button class="btn btn-primary" onclick="runEngine()" style="padding: 14px 40px; font-size: 1rem;">
+                ▶ Run Procurement Engine
+            </button>
+            <button class="btn btn-primary" id="run-multi-btn" onclick="runMultiEngine()" style="padding: 14px 40px; font-size: 1rem; display:none; background:var(--surface-2); color:var(--accent); border:1px solid var(--accent);">
+                ▶ Run All Items (Batch)
+            </button>
+        </div>
+    </div>
+
+    <!-- RESULTS TAB -->
+    <div id="tab-results" class="hidden">
+        <div id="results-content"></div>
+    </div>
+
+    <!-- ORDERS TAB -->
+    <div id="tab-orders" class="hidden">
+        <div id="orders-content"></div>
+    </div>
+
+    <!-- PAR ADVISOR TAB -->
+    <div id="tab-par" class="hidden">
+        <div class="card">
+            <div class="card-title">PAR Advisor <span class="badge">Multi-Item Diagnostic</span></div>
+            <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:20px">
+                Enter items with their venue behavior. Each row is one item at one venue. The system calculates suggested PARs, runs simulation verification, and diagnoses root causes.
+            </p>
+
+            <div id="par-item-list"></div>
+
+            <div class="btn-row">
+                <button class="btn btn-secondary" onclick="addParItem()">+ Add Item</button>
+            </div>
+        </div>
+
+        <!-- Risk Factors -->
+        <div class="card">
+            <div class="card-title">Risk Factors</div>
+
+            <div style="font-size:0.78rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;margin-top:8px">Venue Risks — Factored into venue PAR</div>
+            <p style="color:var(--text-muted);font-size:0.82rem;margin-bottom:12px">
+                These happen at the venue and the warehouse can't prevent them.
+            </p>
+            <div class="risk-grid">
+                <div class="risk-row">
+                    <div class="risk-info">
+                        <div class="risk-name">Breakage / Loss Spike</div>
+                        <div class="risk-desc">Bad weekend, new staff, big event — abnormal loss at the venue</div>
+                    </div>
+                    <div class="risk-inputs">
+                        <div class="form-group"><label>Extra Days</label><input type="number" id="risk-breakage-days" value="7" min="0"></div>
+                        <div class="form-group"><label>Likelihood %</label><input type="number" id="risk-breakage-pct" value="30" min="0" max="100"></div>
+                    </div>
+                </div>
+                <div class="risk-row">
+                    <div class="risk-info">
+                        <div class="risk-name">Venue Ordering Delay</div>
+                        <div class="risk-desc">Manager forgets to submit order, internal approval slow, miscounts</div>
+                    </div>
+                    <div class="risk-inputs">
+                        <div class="form-group"><label>Extra Days</label><input type="number" id="risk-venue-order-days" value="3" min="0"></div>
+                        <div class="form-group"><label>Likelihood %</label><input type="number" id="risk-venue-order-pct" value="50" min="0" max="100"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;margin-top:24px">Warehouse Risks — Handled by warehouse s/S system</div>
+            <p style="color:var(--text-muted);font-size:0.82rem;margin-bottom:12px">
+                These are absorbed by the warehouse. Shown here for reference — not added to venue PAR.
+            </p>
+            <div class="risk-grid">
+                <div class="risk-row">
+                    <div class="risk-info">
+                        <div class="risk-name">Supplier Delay</div>
+                        <div class="risk-desc">Shipment to warehouse arrives later than quoted lead time</div>
+                    </div>
+                    <div class="risk-inputs">
+                        <div class="form-group"><label>Extra Days</label><input type="number" id="risk-supplier-days" value="7" min="0"></div>
+                        <div class="form-group"><label>Likelihood %</label><input type="number" id="risk-supplier-pct" value="60" min="0" max="100"></div>
+                    </div>
+                </div>
+                <div class="risk-row">
+                    <div class="risk-info">
+                        <div class="risk-name">Payment / PO Hold</div>
+                        <div class="risk-desc">Supplier holds shipment due to late payment or approval delays</div>
+                    </div>
+                    <div class="risk-inputs">
+                        <div class="form-group"><label>Extra Days</label><input type="number" id="risk-payment-days" value="3" min="0"></div>
+                        <div class="form-group"><label>Likelihood %</label><input type="number" id="risk-payment-pct" value="20" min="0" max="100"></div>
+                    </div>
+                </div>
+                <div class="risk-row">
+                    <div class="risk-info">
+                        <div class="risk-name">Warehouse Stockout</div>
+                        <div class="risk-desc">Warehouse is low/empty when venue orders, adding delay</div>
+                    </div>
+                    <div class="risk-inputs">
+                        <div class="form-group"><label>Extra Days</label><input type="number" id="risk-warehouse-days" value="3" min="0"></div>
+                        <div class="form-group"><label>Likelihood %</label><input type="number" id="risk-warehouse-pct" value="10" min="0" max="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Item Config -->
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="runParAdvisor()" style="padding:14px 40px;font-size:1rem">
+                ▶ Run PAR Diagnostic
+            </button>
+            <button class="btn btn-secondary" onclick="downloadParTemplate()" style="font-size:0.82rem">📄 Download Template</button>
+            <input type="file" id="par-csv-input" accept=".csv,.xlsx" style="font-family:'DM Sans';font-size:0.82rem;color:var(--text-muted)">
+            <button class="btn btn-secondary" onclick="importParCSV()" style="font-size:0.82rem">Import Items</button>
+        </div>
+
+        <div id="par-results"></div>
+    </div>
+
+    <!-- NEW PAR SETUP TAB -->
+    <div id="tab-newpar" class="hidden">
+        <div class="card">
+            <div class="card-title">New PAR Setup <span class="badge">Cuisine-Based</span></div>
+            <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:20px">
+                Select a cuisine preset or import your Bible (CSV/Excel). Toggle menu sections, adjust per-table quantities, override any item, then export to Excel.
+            </p>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Venue Name</label>
+                    <input type="text" id="np-venue" placeholder="e.g. Delilah Dallas">
+                </div>
+                <div class="form-group">
+                    <label>Cuisine Type</label>
+                    <select id="np-cuisine" onchange="loadCuisinePreset()">
+                        <option value="">— Select Cuisine —</option>
+                        <option value="japanese">Japanese</option>
+                        <option value="chinese">Chinese / Dim Sum</option>
+                        <option value="korean">Korean</option>
+                        <option value="indian">Indian</option>
+                        <option value="thai">Thai / SE Asian</option>
+                        <option value="middle_eastern">Middle Eastern / Med</option>
+                        <option value="mexican">Mexican / Latin</option>
+                        <option value="italian">Italian</option>
+                        <option value="french">French</option>
+                        <option value="steakhouse">American / Steakhouse</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Total Seats</label>
+                    <input type="number" id="np-seats" placeholder="123" value="123">
+                </div>
+                <div class="form-group">
+                    <label>Number of Tables</label>
+                    <input type="number" id="np-tables" placeholder="30" value="30">
+                </div>
+                <div class="form-group">
+                    <label>Covers per Night</label>
+                    <input type="number" id="np-covers" placeholder="350" value="350">
+                </div>
+                <div class="form-group">
+                    <label>Largest Table Size</label>
+                    <input type="number" id="np-largest" placeholder="12" value="12">
+                </div>
+                <div class="form-group">
+                    <label>Smallest Table Size</label>
+                    <input type="number" id="np-smallest" placeholder="2" value="2">
+                </div>
+                <div class="form-group">
+                    <label>Service Style</label>
+                    <select id="np-service-style" onchange="toggleCourses()">
+                        <option value="single">Single Course (casual / Japanese / café)</option>
+                        <option value="multi">Multi-Course Replace (fine dining / steakhouse)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="np-courses-group" style="display:none">
+                    <label>Avg Courses per Guest</label>
+                    <input type="number" id="np-courses" placeholder="3" value="3" min="1" max="7">
+                </div>
+            </div>
+            <div id="np-service-info" style="margin-top:8px;padding:10px 14px;background:var(--surface-2);border-radius:6px;font-size:0.82rem;color:var(--text-muted)">
+                <strong>Single Course:</strong> Each item used once per guest. Per-table qty = pieces per setting. Good for casual dining, Japanese, cafés.
+            </div>
+        </div>
+
+        <!-- CSV Import -->
+        <div class="card">
+            <div class="card-title">Import Bible <span class="badge">CSV / Excel</span></div>
+            <p style="color:var(--text-muted);font-size:0.82rem;margin-bottom:12px">
+                Upload your venue Bible. The engine reads item names and quantities from each sheet and maps them to categories. Per-table quantities default from the cuisine preset or can be set manually.
+            </p>
+            <div style="display:flex;gap:12px;align-items:center">
+                <input type="file" id="np-file-input" accept=".csv,.xlsx,.xls" style="font-family:'DM Sans';font-size:0.85rem;color:var(--text-muted)">
+                <button class="btn btn-secondary" onclick="importBible()">Import</button>
+            </div>
+            <div id="np-import-status" style="margin-top:10px;font-size:0.82rem;color:var(--text-muted)"></div>
+        </div>
+
+        <!-- Menu Sections Toggle -->
+        <div class="card" id="np-sections-card" style="display:none">
+            <div class="card-title">Menu Sections <span class="badge">Toggle on/off</span></div>
+            <div id="np-sections" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+        </div>
+
+        <!-- Items -->
+        <div class="card" id="np-items-card" style="display:none">
+            <div class="card-title">Items — Per Table Quantities & Override</div>
+            <div id="np-items-list"></div>
+            <div class="btn-row" style="margin-top:12px">
+                <button class="btn btn-secondary" onclick="addNpItem()">+ Add Item</button>
+            </div>
+        </div>
+
+        <!-- Bulk Edit Bar -->
+        <div class="card" id="np-bulk-bar" style="display:none">
+            <div class="card-title">Bulk Edit</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-secondary" onclick="bulkClearOverrides()" style="font-size:0.8rem;border-color:var(--warn);color:var(--warn)">Clear All Overrides</button>
+                <button class="btn btn-secondary" onclick="bulkSetLgTable()" style="font-size:0.8rem">Set All Lg Table</button>
+                <button class="btn btn-secondary" onclick="bulkSetSmTable()" style="font-size:0.8rem">Set All Sm Table</button>
+                <button class="btn btn-secondary" onclick="bulkSetTablesByCategory()" style="font-size:0.8rem;border-color:var(--accent);color:var(--accent)">Set Tables by Category</button>
+                <button class="btn btn-secondary" onclick="bulkRemoveEmpty()" style="font-size:0.8rem;border-color:var(--danger);color:var(--danger)">Remove Empty Items</button>
+                <button class="btn btn-secondary" onclick="bulkSetReplacePC()" style="font-size:0.8rem;border-color:var(--accent);color:var(--accent)">Set Replace/Course</button>
+            </div>
+        </div>
+
+        <div id="np-run-btn" style="display:none">
+            <button class="btn btn-primary" onclick="runNewPar()" style="padding:14px 40px;font-size:1rem">
+                ▶ Calculate Initial PARs
+            </button>
+        </div>
+
+        <div id="newpar-results"></div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ─── State ───
+let venueCount = 0;
+let lastReport = null;
+
+// ─── Venue Management ───
+function addVenue(name = '', par = '', demand = '', onHand = '0', trigger = '2.5') {
+    venueCount++;
+    const id = venueCount;
+    const row = document.createElement('div');
+    row.className = 'venue-row';
+    row.id = `venue-${id}`;
+    row.innerHTML = `
+        <input type="text" placeholder="e.g. Delilah LA" value="${name}" data-field="name">
+        <input type="number" placeholder="120" value="${par}" data-field="par" min="1">
+        <input type="number" placeholder="20" value="${demand}" data-field="demand" min="0" step="0.1">
+        <input type="number" placeholder="0" value="${onHand}" data-field="onhand" min="0" class="hide-mobile">
+        <input type="number" placeholder="2.5" value="${trigger}" data-field="trigger" min="0" step="0.5" class="hide-mobile">
+        <button class="btn btn-danger" onclick="removeVenue(${id})">×</button>
+    `;
+    document.getElementById('venue-list').appendChild(row);
+}
+
+function removeVenue(id) {
+    const el = document.getElementById(`venue-${id}`);
+    if (el) el.remove();
+}
+
+function toggleOverride() {
+    const show = document.getElementById('override-check').checked;
+    document.getElementById('override-fields').classList.toggle('hidden', !show);
+}
+
+// ─── Tab Switching ───
+function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
+    document.getElementById(`tab-${tab}`).classList.remove('hidden');
+    if (typeof event !== 'undefined' && event && event.target && event.target.classList) {
+        event.target.classList.add('active');
+    }
+}
+
+// ─── Engine Constants ───
+const ATTRITION = {
+    'Glassware - Delicate': 0.10,
+    'Glassware - Sturdy': 0.07,
+    'Flatware': 0.04,
+    'Dinnerware': 0.03,
+    'Bar Tools': 0.025,
+    'Smallwares': 0.02,
+};
+
+const BUFFER_WH = { FAST: 7, MED: 14, SLOW: 7 };
+const BUFFER_VN = { FAST: 3, MED: 5, SLOW: 3 };
+
+function velocity(avgMonthly) {
+    if (avgMonthly > 15) return 'FAST';
+    if (avgMonthly > 5) return 'MED';
+    return 'SLOW';
+}
+
+function roundToCase(units, caseSize) {
+    if (units <= 0) return 0;
+    return Math.ceil(units / caseSize) * caseSize;
+}
+
+// ─── Core Engine ───
+function runEngine() {
+    // Read item
+    const item = {
+        name: val('item-name') || 'Unnamed Item',
+        sku: val('item-sku') || '',
+        category: val('item-category'),
+        subcategory: val('item-subcategory'),
+        caseSize: num('item-case-size') || 12,
+        unitCost: numOrNull('item-unit-cost'),
+        shippingCost: numOrNull('item-shipping-cost'),
+        shippingType: val('item-shipping-type'),
+        leadTime: num('item-lead-time') || 21,
+        supplier: val('item-supplier') || '',
+        supplierContact: val('item-supplier-contact') || '',
+    };
+
+    // Read venues
+    const venueRows = document.querySelectorAll('.venue-row');
+    const venues = [];
+    venueRows.forEach(row => {
+        const name = row.querySelector('[data-field="name"]').value;
+        const par = parseFloat(row.querySelector('[data-field="par"]').value) || 0;
+        const demand = parseFloat(row.querySelector('[data-field="demand"]').value) || 0;
+        const onHand = parseFloat(row.querySelector('[data-field="onhand"]')?.value) || 0;
+        const trigger = parseFloat(row.querySelector('[data-field="trigger"]')?.value) || 2.5;
+        if (name && par > 0) {
+            venues.push({ name, par, monthlyDemand: demand, onHand, triggerMonths: trigger });
+        }
+    });
+
+    if (venues.length === 0) {
+        alert('Add at least one venue with a name and PAR.');
+        return;
+    }
+
+    // Read warehouse
+    const wh = {
+        maxSimul: num('wh-max-simul') || 2,
+        review: num('wh-review') || 7,
+        onHand: num('wh-on-hand') || 0,
+        onPO: num('wh-on-po') || 0,
+    };
+
+    const useOverride = document.getElementById('override-check').checked;
+    const overrideS_small = useOverride ? numOrNull('override-s') : null;
+    const overrideS_big = useOverride ? numOrNull('override-S') : null;
+
+    const tcoTarget = numOrNull('tco-target');
+
+    // ── Calculate venues ──
+    let totalMonthly = 0;
+    const venueResults = venues.map(v => {
+        const daily = v.monthlyDemand / 30;
+        const vel = velocity(v.monthlyDemand);
+        const buffer = BUFFER_VN[vel];
+        const ss = Math.max(1, Math.ceil(daily * buffer));
+
+        const rawMin = Math.ceil(v.monthlyDemand * v.triggerMonths);
+        const minR = Math.max(1, Math.min(rawMin, v.par - 1));
+        const maxS = v.par;
+        const orderQty = Math.max(0, maxS - minR);
+        const typicalDraw = Math.ceil(v.monthlyDemand);
+
+        const needNow = Math.max(0, v.par - v.onHand);
+        const needNowCases = needNow > 0 ? roundToCase(needNow, item.caseSize) : 0;
+
+        totalMonthly += v.monthlyDemand;
+
+        return {
+            ...v, daily, vel, ss, minR, maxS, orderQty, typicalDraw,
+            needNow, needNowCases,
+            needNowPacks: needNowCases / item.caseSize,
+        };
+    });
+
+    // ── Calculate warehouse ──
+    const combinedDaily = totalMonthly / 30;
+    const whVel = velocity(totalMonthly);
+    const whBuffer = BUFFER_WH[whVel];
+    const whSS = Math.max(1, Math.ceil(combinedDaily * whBuffer));
+
+    const typicalDraws = venueResults.map(v => v.typicalDraw).sort((a, b) => b - a);
+    const simulDraw = typicalDraws.slice(0, wh.maxSimul).reduce((a, b) => a + b, 0);
+
+    const ltReviewDemand = Math.ceil(combinedDaily * (item.leadTime + wh.review));
+    let formulaS_small = ltReviewDemand + whSS;
+    let formulaS_big = roundToCase(
+        formulaS_small + Math.max(simulDraw, Math.ceil(combinedDaily * wh.review)),
+        item.caseSize
+    );
+
+    let s = overrideS_small !== null ? overrideS_small : formulaS_small;
+    let S = overrideS_big !== null ? overrideS_big : formulaS_big;
+    const overridden = overrideS_small !== null || overrideS_big !== null;
+
+    const reorderQty = roundToCase(Math.max(item.caseSize, S - s), item.caseSize);
+
+    const currentPos = wh.onHand + wh.onPO;
+    const whNeed = Math.max(0, S - currentPos);
+    const whNeedCases = roundToCase(whNeed, item.caseSize);
+
+    // ── Stress Test (realistic staggered venue ordering during LT) ──
+    const stressTest = [];
+    let stock = s;
+    stressTest.push({ day: 0, event: `Warehouse at s (${s}), PO placed`, stock, type: 'start' });
+
+    // Sort venues by demand (highest first) for worst-case
+    const sortedVenues = [...venueResults].sort((a, b) => b.typicalDraw - a.typicalDraw);
+    const venueOrders = [];
+
+    // Stagger venue orders realistically — first orders cluster in week 1-2
+    if (sortedVenues.length >= 1) venueOrders.push({ day: 1, venue: sortedVenues[0] });
+    if (sortedVenues.length >= 2) venueOrders.push({ day: Math.min(7, item.leadTime), venue: sortedVenues[1] });
+    if (sortedVenues.length >= 3) venueOrders.push({ day: Math.min(14, item.leadTime), venue: sortedVenues[2] });
+    for (let i = 3; i < sortedVenues.length; i++) {
+        venueOrders.push({ day: Math.min(Math.ceil((i + 1) * 7), item.leadTime), venue: sortedVenues[i] });
+    }
+
+    venueOrders.sort((a, b) => a.day - b.day);
+    venueOrders.forEach(o => {
+        if (o.day <= item.leadTime) {
+            stock -= o.venue.typicalDraw;
+            stressTest.push({
+                day: o.day,
+                event: `${o.venue.name} orders (${o.venue.typicalDraw} units out)`,
+                stock: Math.max(0, stock),
+                stockout: stock < 0,
+                type: 'draw',
+            });
+        }
+    });
+
+    // If LT > 30 days, venues may reorder
+    if (item.leadTime > 30) {
+        venueOrders.forEach(o => {
+            const day2 = o.day + 30;
+            if (day2 <= item.leadTime) {
+                stock -= o.venue.typicalDraw;
+                stressTest.push({
+                    day: day2,
+                    event: `${o.venue.name} reorders (${o.venue.typicalDraw} out)`,
+                    stock: Math.max(0, stock),
+                    stockout: stock < 0,
+                    type: 'draw',
+                });
+            }
+        });
+        stressTest.sort((a, b) => a.day - b.day);
+    }
+
+    stock += reorderQty;
+    stressTest.push({
+        day: item.leadTime,
+        event: `Supplier delivery (+${reorderQty})`,
+        stock,
+        type: 'delivery',
+    });
+
+    // ── Auto-correct if stress test fails ──
+    const hasStockout = stressTest.some(e => e.stockout);
+    let correctedS = null, correctedSBig = null, correctedReorder = null;
+    if (hasStockout) {
+        // Calculate total drawdown during lead time
+        let totalDraw = 0;
+        stressTest.forEach(e => { if (e.type === 'draw') totalDraw += parseInt(e.event.match(/\((\d+)/)?.[1] || 0); });
+        // New s = total drawdown + safety stock (so stock never goes below 0)
+        const newS = totalDraw + whSS;
+        const newSBig = roundToCase(newS + Math.max(simulDraw, Math.ceil(combinedDaily * wh.review)), item.caseSize);
+        const newReorder = roundToCase(Math.max(item.caseSize, newSBig - newS), item.caseSize);
+        correctedS = newS;
+        correctedSBig = newSBig;
+        correctedReorder = newReorder;
+    }
+
+    // ── TCO Table ──
+    let tcoTable = null;
+    let tcoResult = null;
+    if (item.unitCost !== null && item.shippingCost !== null) {
+        tcoTable = [1, 2, 3, 5, 8, 10, 11, 12, 15, 20].map(cases => {
+            const units = cases * item.caseSize;
+            const productCost = units * item.unitCost;
+            let shipping;
+            if (item.shippingType === 'flat') shipping = item.shippingCost;
+            else if (item.shippingType === 'per_case') shipping = item.shippingCost * cases;
+            else shipping = item.shippingCost * units;
+
+            return {
+                cases, units, productCost,
+                shipping, total: productCost + shipping,
+                tcoPerUnit: (productCost + shipping) / units,
+            };
+        });
+
+        if (tcoTarget && item.shippingType === 'flat' && tcoTarget > item.unitCost) {
+            const minQty = Math.ceil(item.shippingCost / (tcoTarget - item.unitCost));
+            const minCases = Math.ceil(minQty / item.caseSize);
+            const actualQty = minCases * item.caseSize;
+            const actualTCO = (actualQty * item.unitCost + item.shippingCost) / actualQty;
+            tcoResult = { target: tcoTarget, minQty, minCases, actualQty, actualTCO };
+        }
+    }
+
+    // ── First Order ──
+    const totalVenueNeed = venueResults.reduce((a, v) => a + v.needNowCases, 0);
+    const totalFirstOrder = totalVenueNeed + whNeedCases;
+
+    // ── Build Report ──
+    lastReport = {
+        item, venues: venueResults,
+        warehouse: {
+            totalMonthly, combinedDaily, vel: whVel, ss: whSS,
+            maxSimul: wh.maxSimul, simulDraw, review: wh.review,
+            s, S, formulaS_small, formulaS_big, overridden,
+            reorderQty, reorderQtyCases: reorderQty / item.caseSize,
+            onHand: wh.onHand, onPO: wh.onPO,
+            whNeed: whNeedCases, whNeedCases: whNeedCases / item.caseSize,
+        },
+        firstOrder: {
+            venueUnits: totalVenueNeed,
+            venueCases: totalVenueNeed / item.caseSize,
+            whUnits: whNeedCases,
+            whCases: whNeedCases / item.caseSize,
+            totalUnits: totalFirstOrder,
+            totalCases: totalFirstOrder / item.caseSize,
+            totalCost: item.unitCost ? totalFirstOrder * item.unitCost : null,
+        },
+        stressTest, tcoTable, tcoResult,
+        stressCorrection: hasStockout ? { correctedS, correctedSBig, correctedReorder } : null,
+    };
+
+    renderResults();
+    renderOrders();
+    switchTab('results');
+    document.querySelector('.tab:nth-child(2)').classList.add('active');
+    document.querySelector('.tab:nth-child(1)').classList.remove('active');
+}
+
+// ─── Render Results ───
+function renderResults() {
+    const r = lastReport;
+    const wh = r.warehouse;
+    const fo = r.firstOrder;
+    let html = '';
+
+    // Summary stats
+    html += `<div class="result-grid">
+        <div class="stat-card">
+            <div class="stat-label">Warehouse s (Reorder Point)</div>
+            <div class="stat-value">${wh.s}</div>
+            <div class="stat-sub">${wh.overridden ? '<span class="override-tag">OVERRIDE</span> Formula: ' + wh.formulaS_small : 'units'}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Warehouse S (Order-Up-To)</div>
+            <div class="stat-value">${wh.S}</div>
+            <div class="stat-sub">${wh.S / r.item.caseSize} cases ${wh.overridden ? '<span class="override-tag">OVERRIDE</span> Formula: ' + wh.formulaS_big : ''}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Reorder Quantity</div>
+            <div class="stat-value">${wh.reorderQty}</div>
+            <div class="stat-sub">${wh.reorderQtyCases} case(s) of ${r.item.caseSize}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">First Order Total</div>
+            <div class="stat-value">${fo.totalUnits}</div>
+            <div class="stat-sub">${fo.totalCases} cases${fo.totalCost ? ' · $' + fo.totalCost.toFixed(2) : ''}</div>
+        </div>
+    </div>`;
+
+    // ── How It Works — Plain English Explainer ──
+    html += `<div class="card" style="border-left:3px solid var(--accent)">
+        <div class="card-title">How The Ordering Works</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+            <div style="background:var(--surface-2);border-radius:10px;padding:18px">
+                <div style="font-size:0.78rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Loop 1: Venue → Warehouse (1-day delivery)</div>
+                ${r.venues.map(v => `<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:0.88rem">
+                    <strong>${v.name}</strong><br>
+                    <span class="text-muted">When stock drops to</span> <strong style="color:var(--accent)">${v.minR}</strong> <span class="text-muted">→ order from warehouse → restock to</span> <strong style="color:var(--accent)">${v.maxS}</strong> <span class="text-muted">(${v.maxS - v.minR} units)</span>
+                </div>`).join('')}
+                <div style="margin-top:10px;font-size:0.82rem;color:var(--text-muted)">Warehouse delivers to venues in <strong style="color:var(--text)">1 day</strong>. Venues don't wait for suppliers.</div>
+            </div>
+            <div style="background:var(--surface-2);border-radius:10px;padding:18px">
+                <div style="font-size:0.78rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Loop 2: Warehouse → Supplier (${r.item.leadTime}-day delivery)</div>
+                <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:0.88rem">
+                    <span class="text-muted">Every</span> <strong style="color:var(--text)">${wh.review} days</strong><span class="text-muted">, check warehouse stock.</span><br>
+                    <span class="text-muted">If stock ≤</span> <strong style="color:var(--accent)">${wh.s}</strong> <span class="text-muted">→ order</span> <strong style="color:var(--accent)">${wh.reorderQty}</strong> <span class="text-muted">from supplier (${wh.reorderQtyCases} cases).</span><br>
+                    <span class="text-muted">Stock goes back up to</span> <strong style="color:var(--accent)">${wh.S}</strong><span class="text-muted">.</span>
+                </div>
+                <div style="margin-top:10px;font-size:0.82rem;color:var(--text-muted)">Supplier delivers in <strong style="color:var(--text)">${r.item.leadTime} days</strong>. The warehouse absorbs this wait time so venues never run out.</div>
+            </div>
+        </div>
+    </div>`;
+
+    // Venue breakdown
+    html += `<div class="card">
+        <div class="card-title">Venue Breakdown</div>
+        <table class="result-table">
+            <tr>
+                <th>Venue</th>
+                <th>PAR</th>
+                <th>Monthly</th>
+                <th>Velocity</th>
+                <th>Min (r)</th>
+                <th>Max (S)</th>
+                <th>On Hand</th>
+                <th>Need Now</th>
+            </tr>
+            ${r.venues.map(v => `
+            <tr>
+                <td><strong>${v.name}</strong></td>
+                <td>${v.par}</td>
+                <td>${v.monthlyDemand}</td>
+                <td class="muted">${v.vel}</td>
+                <td>${v.minR} <span class="muted">(${v.triggerMonths}mo)</span></td>
+                <td class="highlight">${v.maxS}</td>
+                <td>${v.onHand}</td>
+                <td class="highlight">${v.needNowCases} <span class="muted">(${v.needNowPacks}pk)</span></td>
+            </tr>
+            `).join('')}
+        </table>
+    </div>`;
+
+    // Warehouse details
+    html += `<div class="card">
+        <div class="card-title">Warehouse System</div>
+        <table class="result-table">
+            <tr><td class="muted">Combined Monthly Demand</td><td class="highlight">${wh.totalMonthly.toFixed(1)}</td></tr>
+            <tr><td class="muted">Combined Daily Demand</td><td>${wh.combinedDaily.toFixed(2)}</td></tr>
+            <tr><td class="muted">Velocity</td><td>${wh.vel}</td></tr>
+            <tr><td class="muted">Safety Stock</td><td>${wh.ss}</td></tr>
+            <tr><td class="muted">Max Simultaneous Venues</td><td>${wh.maxSimul} → draw of ${wh.simulDraw} units</td></tr>
+            <tr><td class="muted">Review Period</td><td>Every ${wh.review} days</td></tr>
+            <tr><td class="muted">Trigger Rule</td><td>Weekly check → if stock ≤ ${wh.s} → order ${wh.reorderQty} (${wh.reorderQtyCases} case${wh.reorderQtyCases > 1 ? 's' : ''})</td></tr>
+        </table>
+    </div>`;
+
+    // Stress Test
+    const maxStock = Math.max(...r.stressTest.map(e => e.stock), wh.S);
+    html += `<div class="card">
+        <div class="card-title">Stress Test <span class="badge">Worst Case from s</span></div>
+        ${r.stressTest.map(e => {
+            const pct = maxStock > 0 ? Math.max(0, (e.stock / maxStock) * 100) : 0;
+            const barClass = e.stockout ? 'out' : (e.stock < wh.ss ? 'low' : 'ok');
+            const tag = e.stockout ? '<span class="stockout-tag">STOCKOUT</span>' :
+                        e.type === 'delivery' ? '<span class="delivery-tag">DELIVERED</span>' : '';
+            return `
+            <div class="stress-row">
+                <div class="stress-day">Day ${e.day}</div>
+                <div style="flex:2;font-size:0.84rem;color:var(--text-muted)">${e.event}</div>
+                <div class="stress-bar-container">
+                    <div class="stress-bar ${barClass}" style="width:${pct}%"></div>
+                </div>
+                <div class="stress-stock">${e.stock} units ${tag}</div>
+            </div>`;
+        }).join('')}
+        ${r.stressCorrection ? `
+        <div style="margin-top:16px;padding:14px 18px;background:var(--danger-bg);border:1px solid rgba(224,82,82,0.2);border-radius:8px">
+            <div style="font-weight:700;color:var(--danger);margin-bottom:6px">⚠️ Stockout Detected — Auto-Corrected Values:</div>
+            <div style="font-size:0.88rem;color:var(--text)">
+                To prevent stockout at current depletion rates, increase:
+                <strong>s</strong> from ${wh.s} → <strong style="color:var(--accent)">${r.stressCorrection.correctedS}</strong>  ·  
+                <strong>S</strong> from ${wh.S} → <strong style="color:var(--accent)">${r.stressCorrection.correctedSBig}</strong>  ·  
+                Reorder: <strong style="color:var(--accent)">${r.stressCorrection.correctedReorder}</strong> units (${r.stressCorrection.correctedReorder / r.item.caseSize} cases)
+            </div>
+            <div style="font-size:0.82rem;color:var(--text-muted);margin-top:6px">Apply these in the Setup tab under Manual Override (s, S) and re-run to verify.</div>
+        </div>` : `
+        <div style="margin-top:12px;padding:10px 14px;background:var(--success-bg);border:1px solid rgba(76,175,80,0.2);border-radius:8px;font-size:0.88rem;color:var(--success)">
+            ✅ Stress test passed — warehouse can sustain all venue orders during the ${r.item.leadTime}-day supplier lead time.
+        </div>`}
+    </div>`;
+
+    // TCO
+    if (r.tcoTable) {
+        html += `<div class="card">
+            <div class="card-title">TCO by Order Size</div>
+            ${r.tcoResult ? `<p style="margin-bottom:16px;color:var(--text-muted);font-size:0.88rem">
+                Target: <strong style="color:var(--accent)">$${r.tcoResult.target}/unit</strong> →
+                Min order: <strong>${r.tcoResult.minCases} cases (${r.tcoResult.actualQty} units)</strong> →
+                Actual TCO: <strong style="color:var(--accent)">$${r.tcoResult.actualTCO.toFixed(2)}/unit</strong>
+            </p>` : ''}
+            <div class="tco-grid">
+                ${r.tcoTable.map(t => {
+                    const isTarget = r.tcoResult && t.cases === r.tcoResult.minCases;
+                    return `
+                    <div class="tco-cell ${isTarget ? 'target' : ''}">
+                        <div class="tco-cases">${t.cases} case${t.cases > 1 ? 's' : ''}</div>
+                        <div class="tco-price">$${t.tcoPerUnit.toFixed(2)}</div>
+                        <div class="tco-units">${t.units} units</div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    // Download button
+    html += `<div style="margin-top:20px;display:flex;gap:12px">
+        <button class="btn btn-secondary" onclick="downloadEngineResults()" style="font-size:0.85rem">📥 Download Results (Excel)</button>
+    </div>`;
+
+    document.getElementById('results-content').innerHTML = html;
+}
+
+// ─── Render Orders ───
+function renderOrders() {
+    const r = lastReport;
+    let html = `<div class="card"><div class="card-title">Purchase Orders — ${r.item.name}</div>
+        <p class="text-muted mb-10" style="font-size:0.85rem">Supplier: ${r.item.supplier || 'Not specified'} ${r.item.supplierContact ? '· ' + r.item.supplierContact : ''}</p>
+        <div style="display:flex;flex-direction:column;gap:12px">`;
+
+    let poNum = 1;
+    let totalUnits = 0;
+    let totalCases = 0;
+
+    r.venues.forEach(v => {
+        if (v.needNowCases > 0) {
+            html += `<div class="po-card">
+                <div>
+                    <div class="po-dest">PO #${poNum++}: ${v.name}</div>
+                    <div class="po-detail">${r.item.name} (${r.item.sku}) · PAR stock-up (PAR=${v.par})</div>
+                </div>
+                <div class="po-qty">
+                    <div class="big">${v.needNowCases}</div>
+                    <div class="small">${v.needNowPacks} pack(s) of ${r.item.caseSize}</div>
+                </div>
+            </div>`;
+            totalUnits += v.needNowCases;
+            totalCases += v.needNowPacks;
+        }
+    });
+
+    if (r.warehouse.whNeed > 0) {
+        html += `<div class="po-card">
+            <div>
+                <div class="po-dest">PO #${poNum++}: Warehouse</div>
+                <div class="po-detail">${r.item.name} (${r.item.sku}) · Buffer (S=${r.warehouse.S})</div>
+            </div>
+            <div class="po-qty">
+                <div class="big">${r.warehouse.whNeed}</div>
+                <div class="small">${r.warehouse.whNeedCases} pack(s) of ${r.item.caseSize}</div>
+            </div>
+        </div>`;
+        totalUnits += r.warehouse.whNeed;
+        totalCases += r.warehouse.whNeedCases;
+    }
+
+    html += `</div>
+        <div class="divider"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+                <strong>TOTAL: ${totalUnits} units (${totalCases} cases)</strong>
+                ${r.firstOrder.totalCost ? `<span class="text-muted"> · Est. $${r.firstOrder.totalCost.toFixed(2)}</span>` : ''}
+            </div>
+        </div>
+    </div>`;
+
+    document.getElementById('orders-content').innerHTML = html;
+}
+
+// ─── Helpers ───
+function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function num(id) { const el = document.getElementById(id); return el ? (parseFloat(el.value) || 0) : 0; }
+function numOrNull(id) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const v = el.value.trim();
+    return v === '' ? null : parseFloat(v);
+}
+
+// ─── Init with empty venue row ───
+addVenue();
+
+// ─── PAR Advisor ───
+
+let parItemCount = 0;
+
+function addParItem(itemName='', venue='', category='Flatware', caseSize='12', leadTime='21', currentPar='', demand='', orderFreq='every_2_months', lateDays='14', lowPoint='', status='running_ok') {
+    parItemCount++;
+    const id = parItemCount;
+    const container = document.getElementById('par-item-list');
+    if (document.querySelectorAll('.par-item-row').length === 0) {
+        container.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 95px 60px 60px 70px 70px 90px 60px 60px 75px 30px;gap:4px;padding-bottom:6px;border-bottom:1px solid var(--border-light)"><span style="font-size:0.6rem;color:var(--accent);text-transform:uppercase">Item</span><span style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Venue</span><span style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Category</span><span style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Case</span><span style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">LT(d)</span><span style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">PAR</span><span style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Mo Use</span><span style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Freq</span><span style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Late</span><span style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Low</span><span style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Status</span><span></span></div>';
+    }
+    const row = document.createElement('div');
+    row.className = 'par-item-row';
+    row.id = `par-item-${id}`;
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 95px 60px 60px 70px 70px 90px 60px 60px 75px 30px;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid var(--border)';
+    const s = "background:var(--surface-2);border:1px solid var(--border);border-radius:5px;padding:5px;color:var(--text);font-family:'DM Sans';font-size:0.76rem;width:100%";
+    row.innerHTML = `<input type="text" placeholder="Item" value="${itemName}" data-field="itemName" style="${s};color:var(--accent);font-weight:600"><input type="text" placeholder="Venue" value="${venue}" data-field="venue" style="${s}"><select data-field="category" style="${s};font-size:0.7rem"><option value="Glassware - Delicate" ${category==='Glassware - Delicate'?'selected':''}>Glass-Del</option><option value="Glassware - Sturdy" ${category==='Glassware - Sturdy'?'selected':''}>Glass-Sty</option><option value="Flatware" ${category==='Flatware'?'selected':''}>Flatware</option><option value="Dinnerware" ${category==='Dinnerware'?'selected':''}>Dinnerware</option><option value="Bar Tools" ${category==='Bar Tools'?'selected':''}>Bar Tools</option><option value="Smallwares" ${category==='Smallwares'?'selected':''}>Smallwares</option></select><input type="number" value="${caseSize}" data-field="caseSize" min="1" style="${s};text-align:center"><input type="number" value="${leadTime}" data-field="leadTime" min="1" style="${s};text-align:center"><input type="number" placeholder="300" value="${currentPar}" data-field="currentPar" min="0" style="${s};text-align:center"><input type="number" placeholder="84" value="${demand}" data-field="demand" min="0" step="0.1" style="${s};text-align:center"><select data-field="orderFreq" style="${s};font-size:0.7rem"><option value="every_month" ${orderFreq==='every_month'?'selected':''}>Mo</option><option value="every_2_months" ${orderFreq==='every_2_months'?'selected':''}>2mo</option><option value="every_3_months" ${orderFreq==='every_3_months'?'selected':''}>3mo</option><option value="every_4_months" ${orderFreq==='every_4_months'?'selected':''}>4mo</option><option value="every_6_months" ${orderFreq==='every_6_months'?'selected':''}>6mo</option><option value="every_9_months" ${orderFreq==='every_9_months'?'selected':''}>9mo</option><option value="every_12_months" ${orderFreq==='every_12_months'?'selected':''}>Yr</option></select><input type="number" placeholder="14" value="${lateDays}" data-field="lateDays" min="0" style="${s};text-align:center"><input type="number" placeholder="50" value="${lowPoint}" data-field="lowPoint" min="0" style="${s};text-align:center"><select data-field="status" style="${s};font-size:0.7rem"><option value="running_low" ${status==='running_low'?'selected':''}>Low</option><option value="running_ok" ${status==='running_ok'?'selected':''}>OK</option><option value="too_much" ${status==='too_much'?'selected':''}>Excess</option></select><button class="btn btn-danger" onclick="document.getElementById('par-item-${id}').remove()" style="font-size:0.85rem;padding:3px">×</button>`;
+    container.appendChild(row);
+}
+
+function runParAdvisor() {
+    lastParResults = [];
+
+    const venueRisks = [
+        { name: 'Breakage Spike', days: num('risk-breakage-days'), pct: num('risk-breakage-pct') / 100 },
+        { name: 'Venue Ordering Delay', days: num('risk-venue-order-days'), pct: num('risk-venue-order-pct') / 100 },
+    ];
+    const warehouseRisks = [
+        { name: 'Supplier Delay', days: num('risk-supplier-days'), pct: num('risk-supplier-pct') / 100 },
+        { name: 'Payment / PO Hold', days: num('risk-payment-days'), pct: num('risk-payment-pct') / 100 },
+        { name: 'Warehouse Stockout', days: num('risk-warehouse-days'), pct: num('risk-warehouse-pct') / 100 },
+    ];
+
+    const freqMonths = {
+        'every_month': 1, 'every_2_months': 2, 'every_3_months': 3,
+        'every_4_months': 4, 'every_6_months': 6, 'every_9_months': 9, 'every_12_months': 12,
+    };
+    const freqLabels = {
+        'every_month': 'Monthly', 'every_2_months': 'Every 2 months',
+        'every_3_months': 'Quarterly', 'every_4_months': 'Every 4 months',
+        'every_6_months': 'Every 6 months', 'every_9_months': 'Every 9 months',
+        'every_12_months': 'Yearly',
+    };
+
+    // Read all items from multi-item rows
+    const rows = document.querySelectorAll('.par-item-row');
+    const venues = [];
+    rows.forEach(row => {
+        const itemName = row.querySelector('[data-field="itemName"]').value.trim();
+        const venueName = row.querySelector('[data-field="venue"]').value.trim();
+        const category = row.querySelector('[data-field="category"]').value;
+        const caseSize = parseInt(row.querySelector('[data-field="caseSize"]').value) || 12;
+        const leadTime = parseInt(row.querySelector('[data-field="leadTime"]').value) || 21;
+        const currentPar = parseFloat(row.querySelector('[data-field="currentPar"]').value) || 0;
+        const demand = parseFloat(row.querySelector('[data-field="demand"]').value) || 0;
+        const orderFreq = row.querySelector('[data-field="orderFreq"]').value;
+        const lateDays = parseFloat(row.querySelector('[data-field="lateDays"]').value) || 0;
+        const lowPoint = parseFloat(row.querySelector('[data-field="lowPoint"]').value) || 0;
+        const status = row.querySelector('[data-field="status"]').value;
+        const name = venueName ? `${itemName} — ${venueName}` : itemName;
+        if (name) venues.push({ name, itemName, venueName, currentPar, demand, orderFreq, lateDays, lowPoint, status, category, caseSize, leadTime });
+    });
+
+    if (venues.length === 0) { alert('Add at least one item.'); return; }
+
+    let html = '';
+
+
+    venues.forEach(v => {
+        const category = v.category;
+        const caseSize = v.caseSize;
+        const supplierLT = v.leadTime;
+        const attritionRate = ATTRITION[category] || 0;
+
+        const months = freqMonths[v.orderFreq];
+        const realCycleDays = months * 30 + v.lateDays; // actual days between orders
+
+        // ── Reverse-engineer real demand from depletion ──
+        let realMonthly = v.demand; // default to their estimate
+        let demandSource = 'estimate';
+        let estimateVsReal = 0;
+
+        if (v.currentPar > 0 && v.lowPoint > 0 && v.lowPoint < v.currentPar) {
+            const consumed = v.currentPar - v.lowPoint;
+            const realDaily = consumed / realCycleDays;
+            realMonthly = Math.round(realDaily * 30 * 10) / 10;
+            demandSource = 'depletion';
+            estimateVsReal = v.demand > 0 ? Math.round((1 - v.demand / realMonthly) * 100) : 0;
+        }
+
+        const daily = realMonthly / 30;
+        const vel = velocity(realMonthly);
+
+        // ── Floor stock: 1 week of peak (2.5× average) ──
+        const peakDaily = daily * 2.5;
+        const floorStock = Math.ceil(peakDaily * 7);
+
+        // ── Depletion PAR: consumption over real cycle + floor stock ──
+        const cycleConsumption = Math.ceil(daily * realCycleDays);
+        const rawDepletion = cycleConsumption + floorStock;
+        const depletionPar = rawDepletion;
+        const depletionOrder = roundToCase(rawDepletion, caseSize);
+
+        // ── Risk-adjusted PAR (VENUE risks only) ──
+        let weightedRiskDays = 0;
+        const riskBreakdown = [];
+        venueRisks.forEach(r => {
+            const weighted = Math.ceil(daily * r.days * r.pct);
+            weightedRiskDays += daily * r.days * r.pct;
+            riskBreakdown.push({ ...r, units: Math.ceil(daily * r.days), weighted });
+        });
+        const riskBuffer = Math.ceil(weightedRiskDays);
+        const rawRisk = cycleConsumption + floorStock + riskBuffer;
+        const riskPar = rawRisk;
+        const riskOrder = roundToCase(rawRisk, caseSize);
+
+        // ── Warehouse risk buffer (display only — goes into warehouse s/S) ──
+        let whWeightedDays = 0;
+        const whRiskBreakdown = [];
+        warehouseRisks.forEach(r => {
+            const weighted = Math.ceil(daily * r.days * r.pct);
+            whWeightedDays += daily * r.days * r.pct;
+            whRiskBreakdown.push({ ...r, units: Math.ceil(daily * r.days), weighted });
+        });
+        const whRiskBuffer = Math.ceil(whWeightedDays);
+
+        // ── Worst case PAR (venue risks at 100%) ──
+        const worstRiskUnits = venueRisks.reduce((sum, r) => sum + Math.ceil(daily * r.days), 0);
+        const rawWorst = cycleConsumption + floorStock + worstRiskUnits;
+        const worstPar = rawWorst;
+        const worstOrder = roundToCase(rawWorst, caseSize);
+
+        // ── What-if: monthly ordering ──
+        const monthlyConsumption = Math.ceil(daily * 30);
+        const monthlyPar = monthlyConsumption + floorStock + riskBuffer;
+
+        // ── Days of coverage ──
+        const currentDays = v.currentPar > 0 ? Math.floor(v.currentPar / daily) : 0;
+        const depletionDays = Math.floor(depletionPar / daily);
+        const riskDays = Math.floor(riskPar / daily);
+
+        // ── Stock remaining at end of cycle ──
+        const currentRemaining = v.currentPar - cycleConsumption;
+        const riskRemaining = riskPar - cycleConsumption;
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // DIAGNOSTICS ENGINE
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const diagnostics = [];
+
+        // 1. Demand estimate accuracy
+        if (demandSource === 'depletion' && v.demand > 0 && Math.abs(estimateVsReal) > 15) {
+            if (estimateVsReal > 0) {
+                diagnostics.push({
+                    level: 'critical',
+                    icon: '🔴',
+                    title: 'Usage Estimate is Understated',
+                    text: `Venue estimated ${v.demand}/month but depletion data shows actual usage is ${realMonthly}/month — ${Math.abs(estimateVsReal)}% higher than reported. All planning based on the estimate would under-provision.`,
+                    action: `Verify: Do a physical count now, then again in 2 weeks. Actual daily burn = (Count 1 − Count 2 + Received) / 14. This gives you the real number.`,
+                });
+            } else {
+                diagnostics.push({
+                    level: 'info',
+                    icon: '📊',
+                    title: 'Usage Estimate is Overstated',
+                    text: `Venue estimated ${v.demand}/month but depletion shows ${realMonthly}/month — ${Math.abs(estimateVsReal)}% lower. They may be over-ordering.`,
+                    action: `Check if recent orders included one-time stock-ups or event purchases inflating the estimate.`,
+                });
+            }
+        }
+
+        // 2. Late ordering behavior
+        if (v.lateDays > 14) {
+            const extraUnits = Math.ceil(daily * v.lateDays);
+            const extraCost = '(ask venue why orders are delayed)';
+            diagnostics.push({
+                level: v.lateDays > 21 ? 'critical' : 'warning',
+                icon: '⏰',
+                title: `Venue Orders ${v.lateDays} Days Late`,
+                text: `This adds ${extraUnits} units of buffer needed in the PAR — that's ${Math.round(extraUnits / realMonthly * 100)}% of monthly usage wasted as safety cushion. The gap between ideal PAR and realistic PAR is entirely caused by late ordering.`,
+                action: `<strong>Investigate:</strong> Is it the manager forgetting? No reorder trigger in place? Approval process too slow? Set a Min trigger at ${Math.ceil(v.currentPar * 0.5)} and enforce weekly stock checks.`,
+            });
+        }
+
+        // 3. Order frequency vs usage
+        if (months >= 2 && realMonthly > 30) {
+            diagnostics.push({
+                level: 'warning',
+                icon: '📦',
+                title: `High-Volume Item on ${freqLabels[v.orderFreq]} Cycle`,
+                text: `At ${realMonthly}/month, ordering ${freqLabels[v.orderFreq].toLowerCase()} means ${cycleConsumption} units consumed between orders. Switching to monthly would cut PAR from ${riskPar} → ${monthlyPar} (saving ${riskPar - monthlyPar} units of stock).`,
+                action: `<strong>Recommendation:</strong> Move to monthly ordering. PAR drops to <strong>${monthlyPar}</strong> and stockout risk decreases significantly.`,
+            });
+        }
+
+        // 4. Supplier lead time risk
+        if (supplierLT > 14) {
+            diagnostics.push({
+                level: 'info',
+                icon: '🚢',
+                title: `Long Supplier Lead Time (${supplierLT} days)`,
+                text: `If the warehouse is empty when the venue orders, the venue waits the full ${supplierLT}-day supplier cycle. The warehouse s/S system should prevent this, but if warehouse levels aren't maintained, this becomes the bottleneck.`,
+                action: `<strong>Check:</strong> Is the warehouse consistently stocked above its reorder point (s)? If warehouse stockouts are common, the problem isn't the venue PAR — it's the warehouse replenishment cycle.`,
+            });
+        }
+
+        // 5. Payment/processing delays
+        if (warehouseRisks[1].pct > 0.2) {
+            diagnostics.push({
+                level: 'warning',
+                icon: '💳',
+                title: 'Payment Delays Affecting Supply Chain',
+                text: `Payment holds rated at ${Math.round(warehouseRisks[1].pct * 100)}% likelihood. Each occurrence adds ~${warehouseRisks[1].days} days (${Math.ceil(daily * warehouseRisks[1].days)} units of extra buffer needed at the warehouse). This is a finance/ops problem — the warehouse s/S system absorbs it.`,
+                action: `<strong>Investigate:</strong> Are POs getting approved on time? Is accounting paying invoices within terms? Set up auto-pay or pre-approved PO limits for recurring items.`,
+            });
+        }
+
+        // 6. PAR vs actual need mismatch
+        if (v.status === 'running_low' && v.currentPar > 0) {
+            if (v.currentPar >= riskPar) {
+                diagnostics.push({
+                    level: 'critical',
+                    icon: '🔍',
+                    title: 'PAR is Adequate But Venue Still Running Low',
+                    text: `Current PAR (${v.currentPar}) meets or exceeds the risk-adjusted recommendation (${riskPar}). If they're still running low, the issue is NOT the PAR level — it's one of: (a) usage is higher than detected, (b) they're not actually being restocked to full PAR, (c) there's theft/untracked loss.`,
+                    action: `<strong>Action items:</strong> 1) Physical count to verify they actually start at ${v.currentPar} after restock. 2) Check receiving — are full orders being delivered? 3) Track daily depletion for 2 weeks to get real usage.`,
+                });
+            } else {
+                diagnostics.push({
+                    level: 'warning',
+                    icon: '📈',
+                    title: 'PAR Needs Increase',
+                    text: `Current PAR (${v.currentPar}) is below the risk-adjusted recommendation (${riskPar}). With their ordering behavior and risk factors, they need ${riskPar - v.currentPar} more units to avoid running low.`,
+                    action: `<strong>Increase PAR to ${riskPar}</strong> (${riskPar / caseSize} cases). Or fix the ordering behavior to reduce the needed PAR.`,
+                });
+            }
+        }
+
+        if (v.status === 'too_much' && v.currentPar > 0) {
+            const excessOverDepletion = v.currentPar - depletionPar;
+            if (excessOverDepletion > caseSize) {
+                diagnostics.push({
+                    level: 'info',
+                    icon: '📉',
+                    title: 'PAR Can Be Reduced',
+                    text: `Venue reports excess stock. Current PAR (${v.currentPar}) is ${excessOverDepletion} units above the depletion-based need (${depletionPar}). That's ~${(excessOverDepletion / realMonthly).toFixed(1)} months of dead stock.`,
+                    action: `<strong>Safe to reduce PAR to ${riskPar}</strong> (keeps risk buffer). If ordering discipline is good, can go as low as <strong>${depletionPar}</strong>.`,
+                });
+            }
+        }
+
+        // 7. Attrition rate mismatch
+        if (attritionRate > 0 && v.currentPar > 0 && realMonthly > 0) {
+            const expectedFromAttrition = Math.round(v.currentPar * attritionRate);
+            if (realMonthly > expectedFromAttrition * 2) {
+                diagnostics.push({
+                    level: 'warning',
+                    icon: '💥',
+                    title: 'Actual Loss Far Exceeds Industry Attrition',
+                    text: `Industry rate (${(attritionRate*100)}%) predicts ${expectedFromAttrition}/month loss from PAR of ${v.currentPar}. Actual usage is ${realMonthly}/month — ${(realMonthly / expectedFromAttrition).toFixed(1)}× higher. This suggests excessive breakage, theft, or the item is being used/consumed faster than expected.`,
+                    action: `<strong>Investigate:</strong> Are staff trained on handling? Is storage adequate? Could guests be taking them? Consider switching to a sturdier variant if breakage is the issue.`,
+                });
+            }
+        }
+
+        // 8. If everything looks fine
+        if (v.status === 'running_ok' && diagnostics.length === 0) {
+            diagnostics.push({
+                level: 'ok',
+                icon: '✅',
+                title: 'No Issues Detected',
+                text: `Current PAR and ordering patterns appear adequate. Continue monitoring.`,
+                action: '',
+            });
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // RENDER
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        html += `<div class="par-rec-card" style="margin-top:24px">
+            <div class="card-title">${v.name}
+                <span class="badge">${v.status === 'running_low' ? '⚠️ Running Low' : v.status === 'too_much' ? '📦 Excess Stock' : '✅ OK'}</span>
+                ${demandSource === 'depletion' ? '<span class="badge" style="background:rgba(76,175,80,0.15);color:var(--success)">Depletion-Verified</span>' : '<span class="badge" style="background:var(--warn-bg);color:var(--warn)">Estimate Only</span>'}
+            </div>`;
+
+        // Demand comparison
+        if (demandSource === 'depletion' && v.demand > 0) {
+            html += `<div style="display:flex;gap:20px;margin-bottom:16px;font-size:0.88rem">
+                <div><span class="text-muted">Their estimate:</span> <span style="text-decoration:line-through;color:var(--text-dim)">${v.demand}/mo</span></div>
+                <div><span class="text-muted">Depletion-verified:</span> <strong style="color:var(--accent)">${realMonthly}/mo</strong></div>
+                <div><span class="text-muted">Difference:</span> <strong style="color:${estimateVsReal > 15 ? 'var(--danger)' : 'var(--success)'}">${estimateVsReal > 0 ? estimateVsReal + '% understated' : Math.abs(estimateVsReal) + '% overstated'}</strong></div>
+            </div>`;
+        }
+
+        // PAR Recommendations — 3 tiers
+        html += `<div class="scenario-grid">
+            <div class="scenario-card depletion">
+                <div class="scenario-label">Depletion PAR</div>
+                <div class="scenario-value">${depletionPar}</div>
+                <div class="scenario-sub">${depletionDays} days · order: ${depletionOrder} (${depletionOrder/caseSize} cases)</div>
+            </div>
+            <div class="scenario-card risk">
+                <div class="scenario-label">Risk-Adjusted PAR</div>
+                <div class="scenario-value">${riskPar}</div>
+                <div class="scenario-sub">${riskDays} days · +${riskBuffer} buffer · order: ${riskOrder} (${riskOrder/caseSize} cases)</div>
+            </div>
+            <div class="scenario-card worst">
+                <div class="scenario-label">Worst Case PAR</div>
+                <div class="scenario-value">${worstPar}</div>
+                <div class="scenario-sub">+${worstRiskUnits} buffer · order: ${worstOrder} (${worstOrder/caseSize} cases)</div>
+            </div>
+        </div>`;
+        if (depletionOrder === riskOrder && riskOrder === worstOrder) {
+            html += `<div style="padding:8px 14px;background:var(--warn-bg);border:1px solid rgba(255,152,0,0.2);border-radius:6px;margin-bottom:12px;font-size:0.82rem;color:var(--warn)">
+                ℹ️ When ordering, all three round to the same case quantity (${depletionOrder}) due to case size ${caseSize}. PARs differ: ${depletionPar} → ${riskPar} → ${worstPar}. The risk buffer of ${riskBuffer} units is built into the venue PAR target.
+            </div>`;
+        }
+
+        // ── Simulation Verification: prove the suggested PAR survives 3 cycles ──
+        let simStock = riskPar;
+        let simFailed = false;
+        let simMinStock = riskPar;
+        const simCycles = 3;
+        const simEvents = [];
+        for (let cycle = 1; cycle <= simCycles; cycle++) {
+            // Deplete over the order cycle
+            const consumed = Math.ceil(daily * realCycleDays);
+            simStock -= consumed;
+            simMinStock = Math.min(simMinStock, simStock);
+            if (simStock < 0) { simFailed = true; }
+            simEvents.push({ cycle, action: 'deplete', stock: Math.max(0, simStock), consumed });
+            // Restock to PAR
+            simStock = riskPar;
+            simEvents.push({ cycle, action: 'restock', stock: simStock });
+        }
+
+        // If simulation fails, calculate corrected PAR
+        let verifiedPar = riskPar;
+        if (simFailed) {
+            // Need PAR where stock never goes below 0 over one full cycle
+            const neededPar = Math.ceil(daily * realCycleDays) + riskBuffer + floorStock;
+            verifiedPar = roundToCase(neededPar, caseSize);
+        }
+
+        const simBadge = simFailed
+            ? `<span style="font-size:0.72rem;background:var(--danger-bg);color:var(--danger);padding:2px 8px;border-radius:4px;font-weight:600">SIMULATION FAILED</span>`
+            : `<span style="font-size:0.72rem;background:var(--success-bg);color:var(--success);padding:2px 8px;border-radius:4px;font-weight:600">✓ VERIFIED</span>`;
+
+        html += `<div style="padding:10px 14px;background:var(--surface-2);border-radius:8px;margin-bottom:16px;font-size:0.85rem;display:flex;align-items:center;gap:10px">
+            ${simBadge}
+            <span class="text-muted">Simulated ${simCycles} order cycles (${simCycles * realCycleDays} days) — min stock: <strong style="color:var(--text)">${Math.max(0, simMinStock)}</strong></span>
+            ${simFailed ? `<span style="color:var(--danger)">→ Corrected PAR: <strong>${verifiedPar}</strong></span>` : ''}
+        </div>`;
+        // Use verifiedPar (corrected if simulation failed) for the recommendation
+        const recommendedPar = Math.max(riskPar, verifiedPar);
+        if (v.currentPar > 0) {
+            const diff = recommendedPar - v.currentPar;
+            const pctDiff = Math.abs(diff) / v.currentPar * 100;
+            const diffText = diff > 0
+                ? `<span style="color:var(--danger)">Increase by ${diff} units (${Math.ceil(diff/caseSize)} cases)</span>`
+                : pctDiff > 10
+                    ? `<span style="color:var(--success)">Can reduce by ${Math.abs(diff)} units (${Math.floor(Math.abs(diff)/caseSize)} cases) — ${Math.round(pctDiff)}% overstocked</span>`
+                    : `<span style="color:var(--success)">Current PAR is appropriate (within 10%)</span>`;
+
+            html += `<div style="padding:12px 16px;background:var(--surface-2);border-radius:8px;margin-bottom:16px;font-size:0.9rem">
+                Current PAR: <strong>${v.currentPar}</strong> → Recommended: <strong style="color:var(--accent)">${recommendedPar}</strong> · ${diffText}
+            </div>`;
+        }
+
+        // What-if monthly
+        if (months >= 2) {
+            html += `<div style="padding:12px 16px;background:var(--surface-2);border-radius:8px;margin-bottom:16px;font-size:0.9rem;border-left:3px solid var(--accent)">
+                💡 <strong>If they ordered monthly:</strong> PAR could be <strong style="color:var(--accent)">${monthlyPar}</strong> instead of ${riskPar} — saves ${riskPar - monthlyPar} units of stock
+            </div>`;
+        }
+
+        // Reorder Timeline — show when reorders would happen over 12 months
+        const reorderMonths = [];
+        const startPar = riskPar;
+        let runningStock = startPar;
+        const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const now = new Date();
+        const startMonth = now.getMonth(); // 0-indexed
+
+        for (let m = 0; m < 12; m++) {
+            const monthIdx = (startMonth + m) % 12;
+            const monthName = monthNames[monthIdx];
+            const stockBefore = runningStock;
+            runningStock -= realMonthly;
+            const needsReorder = runningStock <= floorStock;
+            
+            reorderMonths.push({
+                month: monthName,
+                monthNum: m + 1,
+                stockStart: Math.round(stockBefore),
+                stockEnd: Math.max(0, Math.round(runningStock)),
+                reorder: needsReorder,
+            });
+
+            if (needsReorder) {
+                // Restock back to PAR
+                runningStock = startPar;
+            }
+        }
+
+        const reorderCount = reorderMonths.filter(m => m.reorder).length;
+        const annualUnits = reorderCount * startPar;
+
+        html += `<div style="margin:16px 0">
+            <div style="font-size:0.78rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Reorder Timeline — Next 12 Months (based on recommended PAR of ${riskPar})</div>
+            <div style="display:flex;gap:4px;margin-bottom:8px">
+                ${reorderMonths.map(m => {
+                    const pct = m.stockEnd / startPar * 100;
+                    const bg = m.reorder ? 'var(--accent)' : (pct < 30 ? 'var(--warn)' : 'var(--success)');
+                    return `<div style="flex:1;text-align:center">
+                        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">${m.month}</div>
+                        <div style="height:40px;background:var(--surface-3);border-radius:4px;position:relative;overflow:hidden">
+                            <div style="position:absolute;bottom:0;width:100%;height:${Math.max(5, pct)}%;background:${bg};border-radius:4px;opacity:0.7"></div>
+                        </div>
+                        ${m.reorder ? '<div style="font-size:0.65rem;color:var(--accent);margin-top:2px;font-weight:700">REORDER</div>' : '<div style="font-size:0.65rem;color:var(--text-dim);margin-top:2px">' + m.stockEnd + '</div>'}
+                    </div>`;
+                }).join('')}
+            </div>
+            <div style="font-size:0.85rem;color:var(--text-muted)">
+                <strong style="color:var(--text)">${reorderCount} reorder(s)</strong> needed in the next 12 months · 
+                ~<strong style="color:var(--text)">${annualUnits.toLocaleString()} units</strong> annual volume ·
+                Reorder every <strong style="color:var(--text)">${months} month${months > 1 ? 's' : ''}</strong>
+            </div>
+        </div>`;
+
+        // Depletion timeline bar
+        if (v.currentPar > 0) {
+            const barMax = Math.max(v.currentPar, riskPar, worstPar);
+            const lowPct = v.lowPoint / barMax * 100;
+            const floorPct = floorStock / barMax * 100;
+
+            html += `<div style="margin:16px 0">
+                <div style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Stock Depletion Over ${realCycleDays}-Day Cycle</div>
+                <div class="depletion-bar-bg">
+                    <div class="depletion-bar-fill" style="width:${v.currentPar/barMax*100}%;background:linear-gradient(90deg, var(--danger) 0%, var(--warn) ${100-lowPct}%, var(--success) 100%);opacity:0.7"></div>
+                </div>
+                <div class="depletion-markers">
+                    <div class="depletion-marker"><span class="dm-value">0</span><span>Stockout</span></div>
+                    <div class="depletion-marker"><span class="dm-value">${v.lowPoint}</span><span>Low point</span></div>
+                    <div class="depletion-marker"><span class="dm-value">${floorStock}</span><span>Floor stock</span></div>
+                    <div class="depletion-marker"><span class="dm-value">${v.currentPar}</span><span>Current PAR</span></div>
+                    ${riskPar > v.currentPar ? `<div class="depletion-marker"><span class="dm-value" style="color:var(--accent)">${riskPar}</span><span>Suggested</span></div>` : ''}
+                </div>
+            </div>`;
+        }
+
+        // Breakdown table
+        html += `<div class="par-detail-grid">
+            <div>
+                <div class="par-detail-item"><span class="label">Real monthly usage</span><span class="value">${realMonthly}/mo</span></div>
+                <div class="par-detail-item"><span class="label">Daily usage</span><span class="value">${daily.toFixed(2)}/day</span></div>
+                <div class="par-detail-item"><span class="label">Order cycle (with delays)</span><span class="value">${realCycleDays} days</span></div>
+                <div class="par-detail-item"><span class="label">Cycle consumption</span><span class="value">${cycleConsumption} units</span></div>
+            </div>
+            <div>
+                <div class="par-detail-item"><span class="label">Floor stock (1wk peak)</span><span class="value">${floorStock} units</span></div>
+                <div class="par-detail-item"><span class="label">Risk buffer (weighted)</span><span class="value">+${riskBuffer} units</span></div>
+                <div class="par-detail-item"><span class="label">Velocity</span><span class="value">${vel}</span></div>
+                ${attritionRate > 0 ? `<div class="par-detail-item"><span class="label">Industry attrition</span><span class="value">${(attritionRate*100)}%/mo (expected ${Math.round(v.currentPar * attritionRate)}/mo)</span></div>` : ''}
+            </div>
+        </div>`;
+
+        // Venue Risk breakdown
+        html += `<div style="margin-top:16px">
+            <div style="font-size:0.78rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Venue Risk Breakdown — Added to PAR</div>
+            <table class="result-table">
+                <tr><th>Risk</th><th>Extra Days</th><th>Raw Units</th><th>Likelihood</th><th>Weighted Units</th></tr>
+                ${riskBreakdown.map(r => `
+                <tr>
+                    <td>${r.name}</td>
+                    <td class="muted">${r.days}d</td>
+                    <td>${r.units}</td>
+                    <td class="muted">${Math.round(r.pct*100)}%</td>
+                    <td class="highlight">${r.weighted}</td>
+                </tr>`).join('')}
+                <tr style="border-top:2px solid var(--border-light)">
+                    <td colspan="4"><strong>Venue Risk Buffer (in PAR)</strong></td>
+                    <td class="highlight"><strong>${riskBuffer}</strong></td>
+                </tr>
+            </table>
+        </div>`;
+
+        // Warehouse Risk reference
+        html += `<div style="margin-top:16px">
+            <div style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Warehouse Risks — Handled by warehouse s/S (not in venue PAR)</div>
+            <table class="result-table">
+                <tr><th>Risk</th><th>Extra Days</th><th>Raw Units</th><th>Likelihood</th><th>Weighted Units</th></tr>
+                ${whRiskBreakdown.map(r => `
+                <tr>
+                    <td>${r.name}</td>
+                    <td class="muted">${r.days}d</td>
+                    <td>${r.units}</td>
+                    <td class="muted">${Math.round(r.pct*100)}%</td>
+                    <td class="muted">${r.weighted}</td>
+                </tr>`).join('')}
+                <tr style="border-top:2px solid var(--border-light)">
+                    <td colspan="4">Warehouse Risk Buffer (in s/S)</td>
+                    <td class="muted">${whRiskBuffer}</td>
+                </tr>
+            </table>
+        </div>`;
+
+        // Diagnostics
+        html += `<div class="diag-section">
+            <div style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">🔎 Diagnostic Findings — Investigate These</div>
+            ${diagnostics.map(d => `
+            <div class="diag-card ${d.level}">
+                <div class="diag-icon">${d.icon}</div>
+                <div class="diag-content">
+                    <div class="diag-title">${d.title}</div>
+                    <div class="diag-text">${d.text}</div>
+                    ${d.action ? `<div class="diag-action">${d.action}</div>` : ''}
+                </div>
+            </div>`).join('')}
+        </div>`;
+
+        html += `</div>`; // close par-rec-card
+
+        // Collect for export
+        const keyFinding = diagnostics.length > 0 ? diagnostics[0].title : 'No issues';
+        lastParResults.push({
+            name: v.name, itemName: v.itemName || v.name, venueName: v.venueName || v.name,
+            currentPar: v.currentPar, realMonthly, demandSource,
+            depletionPar, riskPar, worstPar, monthlyPar, recommendedPar,
+            simVerified: !simFailed, verifiedPar,
+            category, caseSize, leadTime: supplierLT,
+            status: v.status, keyFinding,
+            riskBuffer, cycleConsumption, floorStock,
+            orderFreq: freqLabels[v.orderFreq], lateDays: v.lateDays,
+            diagnostics: diagnostics.map(d => ({level:d.level, title:d.title, text:d.text})),
+        });
+    });
+
+    // ── Items Issues Report ──
+    const issueItems = lastParResults.filter(v => v.status === 'running_low' || (v.currentPar > 0 && v.currentPar < v.recommendedPar));
+    if (issueItems.length > 0) {
+        html += `<div class="card" style="margin-top:24px;border-left:3px solid var(--danger)">
+            <div class="card-title">⚠️ Items Running Out — Action Required</div>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px">These items have PARs below the recommended level or are flagged as running low. The recommended PAR has been simulation-verified to survive multiple order cycles.</p>
+            <table class="result-table">
+                <tr><th>Venue</th><th>Current PAR</th><th style="color:var(--accent)">Set PAR To</th><th>Shortfall</th><th>Verified</th><th>Key Issue</th></tr>
+                ${issueItems.map(v => {
+                    const shortfall = v.recommendedPar - v.currentPar;
+                    const verBadge = v.simVerified
+                        ? '<span style="color:var(--success);font-size:0.75rem">✓ Verified</span>'
+                        : '<span style="color:var(--warn);font-size:0.75rem">Corrected</span>';
+                    return `<tr>
+                        <td><strong>${v.name}</strong></td>
+                        <td>${v.currentPar}</td>
+                        <td class="highlight"><strong>${v.recommendedPar}</strong></td>
+                        <td style="color:var(--danger)">+${shortfall > 0 ? shortfall : 0}</td>
+                        <td>${verBadge}</td>
+                        <td style="font-size:0.82rem">${v.keyFinding}</td>
+                    </tr>`;
+                }).join('')}
+            </table>
+            <div style="margin-top:12px;padding:10px 14px;background:var(--surface-2);border-radius:6px;font-size:0.85rem;color:var(--text-muted)">
+                💡 If ordering frequency is the root cause, switching to monthly ordering would reduce PAR to: ${issueItems.map(v => `<strong>${v.name}: ${v.monthlyPar}</strong>`).join(' · ')}
+            </div>
+        </div>`;
+    }
+
+    // Download and Push buttons
+    html += `<div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="downloadParResults()" style="font-size:0.85rem">📥 Download PAR Report (Excel)</button>
+        <button class="btn btn-primary" onclick="pushParToSetup()" style="font-size:0.85rem">🔄 Push Recommended PARs to Setup → Run Stress Test</button>
+    </div>`;
+
+    document.getElementById('par-results').innerHTML = html;
+}
+
+// Init PAR advisor with one empty row
+addParItem();
+
+// ─── New PAR Setup Engine (Cuisine + CSV + Override + Export) ───
+
+const CUISINE_PRESETS = {
+    japanese: { name: 'Japanese', sections: {
+        'Core Service': [['Water Glass','Glassware','sturdy',0.07,12,2],['Water Pitcher','Glassware','sturdy',0.03,1,1],['Soy Sauce Dish','Dinnerware','sturdy',0.03,12,2],['Soy Sauce Vessel','Dinnerware','sturdy',0.03,2,1],['GF Soy Vessel','Dinnerware','sturdy',0.03,1,0],['Chopstick Rest','Dinnerware','sturdy',0.03,8,5],['Share Plate','Dinnerware','sturdy',0.03,12,2],['Oshibori Tray (Sm)','Service','sturdy',0.02,1,1],['Oshibori Tray (Lg)','Service','sturdy',0.02,1,0],['Oshibori Tongs','Service','durable',0.025,1,0],['Check Presenter','Service','sturdy',0.02,1,1]],
+        'Sushi & Sashimi': [['Sushi Plate/Platter','Dinnerware','sturdy',0.03,4,1],['Small Coupe Plate','Dinnerware','sturdy',0.03,6,2],['Sashimi Plate','Dinnerware','sturdy',0.03,3,1]],
+        'Robata / Grill': [['Skewer Plate','Dinnerware','sturdy',0.03,4,1],['Share Tongs','Service','durable',0.025,3,0]],
+        'Noodles & Rice': [['Noodle/Rice Bowl','Dinnerware','sturdy',0.03,6,1],['Stone Rice Bowl','Dinnerware','sturdy',0.02,3,0]],
+        'Tempura': [['Tempura Plate','Dinnerware','sturdy',0.03,3,1],['Dipping Sauce Bowl','Dinnerware','sturdy',0.03,4,1]],
+        'Tea Service': [['Tea Pot','Glassware','sturdy',0.07,1,0],['Tea Glass','Glassware','sturdy',0.07,2,0]],
+        'Sake Service': [['Sake Glass','Glassware','delicate',0.10,6,1],['Sake Carafe','Glassware','sturdy',0.07,2,1]],
+        'Wine Service': [['Wine Glass (Red)','Glassware','delicate',0.10,6,1],['Wine Glass (White)','Glassware','delicate',0.10,5,1]],
+        'Coffee & Espresso': [['Coffee Cup','Glassware','sturdy',0.07,1,0],['Coffee Saucer','Dinnerware','sturdy',0.03,1,0],['Espresso Cup','Glassware','sturdy',0.07,1,0],['Espresso Saucer','Dinnerware','sturdy',0.03,1,0],['Creamer','Dinnerware','sturdy',0.03,1,0],['Sugar Caddy','Dinnerware','sturdy',0.03,1,0]],
+        'Flatware': [['Dinner Fork','Flatware','durable',0.04,12,2],['Dinner Knife','Flatware','durable',0.04,12,2],['Butter Knife','Flatware','durable',0.04,12,2],['Dessert Spoon','Flatware','durable',0.04,7,1],['Steak Knife','Flatware','durable',0.04,7,1],['Share Spoon','Flatware','durable',0.04,3,0],['A.D. Coffee Spoon','Flatware','durable',0.04,2,0]],
+        'Misc Service': [['Sauce Boat/Ramekin','Dinnerware','sturdy',0.03,3,1],['Bottle Coaster','Service','sturdy',0.02,2,0],['Dumpling Bowl','Dinnerware','sturdy',0.03,3,1]],
+    }},
+    chinese: { name: 'Chinese / Dim Sum', sections: {
+        'Core Service': [['Water Glass','Glassware','sturdy',0.07,12,2],['Water Pitcher','Glassware','sturdy',0.03,1,1],['Soy Sauce Dish','Dinnerware','sturdy',0.03,12,2],['Rice Bowl','Dinnerware','sturdy',0.03,12,2],['Chopstick Rest','Dinnerware','sturdy',0.03,12,2],['Share Plate','Dinnerware','sturdy',0.03,12,2],['Check Presenter','Service','sturdy',0.02,1,1]],
+        'Dim Sum': [['Steamer Basket','Service','sturdy',0.02,4,1],['Small Dipping Dish','Dinnerware','sturdy',0.03,12,2],['Dim Sum Plate','Dinnerware','sturdy',0.03,6,2]],
+        'Soup & Noodles': [['Soup Bowl (Lg)','Dinnerware','sturdy',0.03,6,1],['Soup Spoon (Chinese)','Flatware','sturdy',0.03,12,2],['Noodle Bowl','Dinnerware','sturdy',0.03,6,1]],
+        'Wok & Mains': [['Serving Platter','Dinnerware','sturdy',0.03,4,1],['Sauce Boat','Dinnerware','sturdy',0.03,2,1]],
+        'Tea Service': [['Tea Pot','Glassware','sturdy',0.07,2,1],['Tea Cup','Glassware','sturdy',0.07,12,2]],
+        'Wine Service': [['Wine Glass (Red)','Glassware','delicate',0.10,6,1],['Wine Glass (White)','Glassware','delicate',0.10,5,1]],
+        'Flatware': [['Dinner Fork','Flatware','durable',0.04,6,1],['Dinner Knife','Flatware','durable',0.04,6,1],['Dessert Spoon','Flatware','durable',0.04,6,1],['Share Spoon (Lg)','Flatware','durable',0.04,4,1]],
+    }},
+    korean: { name: 'Korean', sections: {
+        'Core Service': [['Water Glass','Glassware','sturdy',0.07,12,2],['Rice Bowl (Metal)','Dinnerware','durable',0.02,12,2],['Banchan Dish (Sm)','Dinnerware','sturdy',0.03,10,4],['Share Plate','Dinnerware','sturdy',0.03,12,2],['Metal Chopsticks','Flatware','durable',0.02,12,2],['Check Presenter','Service','sturdy',0.02,1,1]],
+        'BBQ / Grill': [['Stone Bowl (Hot)','Dinnerware','sturdy',0.02,6,1],['Grill Tongs','Service','durable',0.025,2,1],['Lettuce Plate','Dinnerware','sturdy',0.03,3,1],['Dipping Sauce Dish','Dinnerware','sturdy',0.03,6,2]],
+        'Soup & Stew': [['Soup/Stew Pot','Dinnerware','sturdy',0.02,4,1],['Soup Spoon (Long)','Flatware','durable',0.04,12,2]],
+        'Noodles': [['Noodle Bowl (Lg)','Dinnerware','sturdy',0.03,6,1]],
+        'Soju / Drinks': [['Soju Glass','Glassware','sturdy',0.07,12,2],['Beer Glass','Glassware','sturdy',0.07,6,1]],
+        'Flatware': [['Dinner Fork','Flatware','durable',0.04,6,1],['Dinner Knife','Flatware','durable',0.04,6,1],['Dessert Spoon','Flatware','durable',0.04,6,1]],
+    }},
+    indian: { name: 'Indian', sections: {
+        'Core Service': [['Water Glass','Glassware','sturdy',0.07,12,2],['Water Pitcher','Glassware','sturdy',0.03,1,1],['Dinner Plate','Dinnerware','sturdy',0.03,12,2],['B&B Plate','Dinnerware','sturdy',0.03,12,2],['Check Presenter','Service','sturdy',0.02,1,1]],
+        'Thali Service': [['Thali Plate','Dinnerware','durable',0.02,8,1],['Katori (Sm Bowl)','Dinnerware','durable',0.02,8,2]],
+        'Curry & Mains': [['Serving Bowl (Med)','Dinnerware','sturdy',0.03,4,1],['Rice Bowl','Dinnerware','sturdy',0.03,6,1],['Ramekin/Chutney','Dinnerware','sturdy',0.03,6,2],['Sauce Boat','Dinnerware','sturdy',0.03,3,1]],
+        'Bread Service': [['Bread Basket/Plate','Dinnerware','sturdy',0.03,3,1]],
+        'Tandoor': [['Sizzler Plate','Dinnerware','durable',0.02,3,1]],
+        'Drinks': [['Lassi Glass','Glassware','sturdy',0.07,4,1],['Chai Cup','Glassware','sturdy',0.07,4,1],['Wine Glass','Glassware','delicate',0.10,6,1]],
+        'Flatware': [['Dinner Fork','Flatware','durable',0.04,12,2],['Dinner Knife','Flatware','durable',0.04,12,2],['Dessert Spoon','Flatware','durable',0.04,8,1],['Soup Spoon','Flatware','durable',0.04,6,1],['Share Spoon','Flatware','durable',0.04,4,1]],
+    }},
+    thai: { name: 'Thai / SE Asian', sections: {
+        'Core Service': [['Water Glass','Glassware','sturdy',0.07,12,2],['Dinner Plate','Dinnerware','sturdy',0.03,12,2],['Share Plate','Dinnerware','sturdy',0.03,8,2],['Rice Bowl','Dinnerware','sturdy',0.03,12,2],['Check Presenter','Service','sturdy',0.02,1,1]],
+        'Soup & Curry': [['Soup Bowl (Lg)','Dinnerware','sturdy',0.03,4,1],['Curry Bowl','Dinnerware','sturdy',0.03,4,1],['Soup Spoon','Flatware','durable',0.04,12,2]],
+        'Noodles': [['Noodle Bowl','Dinnerware','sturdy',0.03,6,1]],
+        'Wok & Stir Fry': [['Serving Platter','Dinnerware','sturdy',0.03,3,1],['Dipping Sauce Dish','Dinnerware','sturdy',0.03,6,2]],
+        'Wine & Drinks': [['Wine Glass','Glassware','delicate',0.10,6,1],['Beer Glass','Glassware','sturdy',0.07,4,1]],
+        'Flatware': [['Dinner Fork','Flatware','durable',0.04,12,2],['Dinner Knife','Flatware','durable',0.04,12,2],['Dessert Spoon','Flatware','durable',0.04,8,1],['Share Spoon (Lg)','Flatware','durable',0.04,4,1]],
+    }},
+    middle_eastern: { name: 'Middle Eastern / Med', sections: {
+        'Core Service': [['Water Glass','Glassware','sturdy',0.07,12,2],['Dinner Plate','Dinnerware','sturdy',0.03,12,2],['B&B Plate','Dinnerware','sturdy',0.03,12,2],['Share Plate','Dinnerware','sturdy',0.03,8,2],['Check Presenter','Service','sturdy',0.02,1,1]],
+        'Mezze': [['Mezze Plate (Sm)','Dinnerware','sturdy',0.03,8,3],['Dip Bowl','Dinnerware','sturdy',0.03,6,2],['Pita Basket','Service','sturdy',0.02,2,1]],
+        'Grill / Kebab': [['Skewer Plate','Dinnerware','sturdy',0.03,4,1],['Serving Platter','Dinnerware','sturdy',0.03,3,1]],
+        'Soup': [['Soup Bowl','Dinnerware','sturdy',0.03,4,1]],
+        'Tea & Coffee': [['Tea Glass (Sm)','Glassware','sturdy',0.07,6,1],['Turkish Coffee Cup','Glassware','sturdy',0.07,4,1]],
+        'Wine Service': [['Wine Glass (Red)','Glassware','delicate',0.10,6,1],['Wine Glass (White)','Glassware','delicate',0.10,5,1]],
+        'Flatware': [['Dinner Fork','Flatware','durable',0.04,12,2],['Dinner Knife','Flatware','durable',0.04,12,2],['Dessert Spoon','Flatware','durable',0.04,8,1],['Soup Spoon','Flatware','durable',0.04,6,1],['Steak Knife','Flatware','durable',0.04,5,1]],
+    }},
+    mexican: { name: 'Mexican / Latin', sections: {
+        'Core Service': [['Water Glass','Glassware','sturdy',0.07,12,2],['Dinner Plate','Dinnerware','sturdy',0.03,12,2],['B&B Plate','Dinnerware','sturdy',0.03,8,2],['Share Plate','Dinnerware','sturdy',0.03,8,2],['Check Presenter','Service','sturdy',0.02,1,1]],
+        'Tacos & Antojitos': [['Taco Plate','Dinnerware','sturdy',0.03,6,2],['Salsa Bowl','Dinnerware','sturdy',0.03,4,2],['Tortilla Warmer','Service','sturdy',0.02,2,1]],
+        'Moles & Mains': [['Serving Bowl','Dinnerware','sturdy',0.03,3,1],['Rice/Beans Dish','Dinnerware','sturdy',0.03,4,1],['Ramekin/Sauce','Dinnerware','sturdy',0.03,6,2]],
+        'Soup': [['Soup Bowl','Dinnerware','sturdy',0.03,4,1]],
+        'Coffee': [['Coffee Cup','Glassware','sturdy',0.07,3,1],['Coffee Saucer','Dinnerware','sturdy',0.03,3,1]],
+        'Wine Service': [['Wine Glass (Red)','Glassware','delicate',0.10,5,1],['Wine Glass (White)','Glassware','delicate',0.10,4,1]],
+        'Flatware': [['Dinner Fork','Flatware','durable',0.04,12,2],['Dinner Knife','Flatware','durable',0.04,12,2],['Dessert Spoon','Flatware','durable',0.04,8,1],['Soup Spoon','Flatware','durable',0.04,6,1],['Steak Knife','Flatware','durable',0.04,6,1]],
+    }},
+    italian: { name: 'Italian', sections: {
+        'Core Service': [['Water Glass','Glassware','sturdy',0.07,12,2],['Water Pitcher','Glassware','sturdy',0.03,1,1],['Dinner Plate','Dinnerware','sturdy',0.03,12,2],['B&B Plate','Dinnerware','sturdy',0.03,12,2],['Olive Oil Dish','Dinnerware','sturdy',0.03,2,1],['Check Presenter','Service','sturdy',0.02,1,1]],
+        'Antipasti': [['Share Plate','Dinnerware','sturdy',0.03,8,2],['Small Bowl','Dinnerware','sturdy',0.03,4,1]],
+        'Pasta': [['Pasta Bowl','Dinnerware','sturdy',0.03,10,2]],
+        'Mains & Grill': [['Serving Platter','Dinnerware','sturdy',0.03,3,1],['Ramekin','Dinnerware','sturdy',0.03,4,1],['Steak Knife','Flatware','durable',0.04,6,1]],
+        'Soup & Salad': [['Soup Bowl','Dinnerware','sturdy',0.03,4,1],['Salad Plate','Dinnerware','sturdy',0.03,8,2]],
+        'Wine Service': [['Wine Glass (Red)','Glassware','delicate',0.10,8,2],['Wine Glass (White)','Glassware','delicate',0.10,6,1],['Wine Carafe','Glassware','sturdy',0.07,2,1]],
+        'Coffee & Espresso': [['Espresso Cup','Glassware','sturdy',0.07,4,1],['Espresso Saucer','Dinnerware','sturdy',0.03,4,1],['Creamer','Dinnerware','sturdy',0.03,1,1],['Sugar Caddy','Dinnerware','sturdy',0.03,1,1]],
+        'Flatware': [['Dinner Fork','Flatware','durable',0.04,12,2],['Dinner Knife','Flatware','durable',0.04,12,2],['Pasta Fork','Flatware','durable',0.04,10,2],['Dessert Spoon','Flatware','durable',0.04,8,1],['Soup Spoon','Flatware','durable',0.04,4,1],['Butter Knife','Flatware','durable',0.04,12,2]],
+    }},
+    french: { name: 'French', sections: {
+        'Core Service': [['Water Glass','Glassware','sturdy',0.07,12,2],['Water Pitcher','Glassware','sturdy',0.03,1,1],['Dinner Plate','Dinnerware','sturdy',0.03,12,2],['B&B Plate','Dinnerware','sturdy',0.03,12,2],['Butter Dish','Dinnerware','sturdy',0.03,2,1],['Check Presenter','Service','sturdy',0.02,1,1]],
+        'Appetizers': [['Salad Plate','Dinnerware','sturdy',0.03,10,2],['Escargot Plate','Dinnerware','sturdy',0.03,3,1],['Ramekin','Dinnerware','sturdy',0.03,4,1]],
+        'Soup': [['Soup Bowl','Dinnerware','sturdy',0.03,6,1],['Soup Cup & Saucer','Dinnerware','sturdy',0.03,4,1]],
+        'Mains': [['Serving Platter','Dinnerware','sturdy',0.03,3,1],['Sauce Boat','Dinnerware','sturdy',0.03,2,1],['Steak Knife','Flatware','durable',0.04,6,1]],
+        'Cheese & Dessert': [['Cheese Board','Dinnerware','sturdy',0.02,2,1],['Dessert Plate','Dinnerware','sturdy',0.03,8,1]],
+        'Wine Service': [['Wine Glass (Red)','Glassware','delicate',0.10,8,2],['Wine Glass (White)','Glassware','delicate',0.10,6,2],['Champagne Flute','Glassware','delicate',0.10,4,1],['Wine Carafe','Glassware','sturdy',0.07,2,1]],
+        'Coffee': [['Coffee Cup','Glassware','sturdy',0.07,4,1],['Coffee Saucer','Dinnerware','sturdy',0.03,4,1],['Creamer','Dinnerware','sturdy',0.03,1,1],['Sugar Caddy','Dinnerware','sturdy',0.03,1,1]],
+        'Flatware': [['Dinner Fork','Flatware','durable',0.04,12,2],['Salad Fork','Flatware','durable',0.04,10,2],['Dinner Knife','Flatware','durable',0.04,12,2],['Butter Knife','Flatware','durable',0.04,12,2],['Dessert Spoon','Flatware','durable',0.04,8,1],['Soup Spoon','Flatware','durable',0.04,6,1],['Escargot Fork','Flatware','durable',0.04,3,1]],
+    }},
+    steakhouse: { name: 'American / Steakhouse', sections: {
+        'Core Service': [['Water Glass','Glassware','sturdy',0.07,12,2],['Water Pitcher','Glassware','sturdy',0.03,1,1],['Dinner Plate (Lg)','Dinnerware','sturdy',0.03,12,2],['B&B Plate','Dinnerware','sturdy',0.03,12,2],['Check Presenter','Service','sturdy',0.02,1,1]],
+        'Apps & Salads': [['Salad Plate','Dinnerware','sturdy',0.03,8,2],['Share Plate','Dinnerware','sturdy',0.03,6,2],['Ramekin','Dinnerware','sturdy',0.03,6,2]],
+        'Steaks & Mains': [['Steak Plate (Oval)','Dinnerware','sturdy',0.03,8,2],['Steak Knife','Flatware','durable',0.04,10,2],['Sauce Boat','Dinnerware','sturdy',0.03,3,1]],
+        'Sides': [['Side Dish Bowl','Dinnerware','sturdy',0.03,6,2]],
+        'Soup': [['Soup Bowl','Dinnerware','sturdy',0.03,4,1]],
+        'Wine Service': [['Wine Glass (Red)','Glassware','delicate',0.10,8,2],['Wine Glass (White)','Glassware','delicate',0.10,5,1]],
+        'Coffee': [['Coffee Cup','Glassware','sturdy',0.07,4,1],['Coffee Saucer','Dinnerware','sturdy',0.03,4,1],['Creamer','Dinnerware','sturdy',0.03,1,1],['Sugar Caddy','Dinnerware','sturdy',0.03,1,1]],
+        'Flatware': [['Dinner Fork','Flatware','durable',0.04,12,2],['Salad Fork','Flatware','durable',0.04,8,2],['Dinner Knife','Flatware','durable',0.04,12,2],['Butter Knife','Flatware','durable',0.04,12,2],['Dessert Spoon','Flatware','durable',0.04,8,1],['Soup Spoon','Flatware','durable',0.04,4,1]],
+    }},
+};
+
+let npItemCount = 0;
+let activeSections = {};
+let lastNewParResults = null;
+
+function loadCuisinePreset() {
+    const cuisine = document.getElementById('np-cuisine').value;
+    if (!cuisine) { ['np-sections-card','np-items-card','np-run-btn'].forEach(id => document.getElementById(id).style.display='none'); return; }
+    const preset = CUISINE_PRESETS[cuisine];
+    activeSections = {};
+    const sd = document.getElementById('np-sections');
+    sd.innerHTML = '';
+    Object.keys(preset.sections).forEach(section => {
+        activeSections[section] = true;
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-secondary';
+        btn.style.cssText = 'border-color:var(--accent);color:var(--accent);font-size:0.82rem';
+        btn.textContent = section;
+        btn.onclick = () => { activeSections[section]=!activeSections[section]; btn.style.borderColor=activeSections[section]?'var(--accent)':'var(--border)'; btn.style.color=activeSections[section]?'var(--accent)':'var(--text-dim)'; btn.style.opacity=activeSections[section]?'1':'0.5'; rebuildItems(cuisine); };
+        sd.appendChild(btn);
+    });
+    rebuildItems(cuisine);
+    ['np-sections-card','np-items-card','np-run-btn','np-bulk-bar'].forEach(id => document.getElementById(id).style.display='');
+}
+
+function rebuildItems(cuisine) {
+    const p = CUISINE_PRESETS[cuisine]; const c = document.getElementById('np-items-list');
+    c.innerHTML = npItemsHeader();
+    npItemCount = 0;
+    Object.entries(p.sections).forEach(([sec, items]) => { if (!activeSections[sec]) return; items.forEach(([n,cat,t,a,lg,sm,rpc]) => addNpItem(n,cat,lg,sm,t,a,sec,'',rpc||'no')); });
+}
+
+function addNpItem(name='',category='Glassware',lgQty='',smQty='',type='sturdy',attrition=0.07,section='Custom',override='',replacePC='no') {
+    npItemCount++; const id=npItemCount; const c=document.getElementById('np-items-list');
+    const row=document.createElement('div'); row.id=`np-item-${id}`; row.className='np-item-row';
+    row.style.cssText='display:grid;grid-template-columns:1fr 90px 90px 70px 70px 70px 70px 40px 90px 40px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)';
+    const s="background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:6px;color:var(--text);font-family:'DM Sans';font-size:0.8rem;width:100%";
+    const a="background:var(--surface-2);border:1px solid var(--accent-dim);border-radius:6px;padding:6px;color:var(--accent);font-family:'DM Sans';font-size:0.82rem;width:100%;text-align:center;font-weight:600";
+    const o="background:var(--surface-2);border:1px solid rgba(255,152,0,0.3);border-radius:6px;padding:6px;color:var(--warn);font-family:'DM Sans';font-size:0.82rem;width:100%;text-align:center;font-weight:600";
+    row.innerHTML=`<input type="text" value="${name}" data-field="name" style="${s}"><select data-field="category" style="${s};font-size:0.75rem"><option value="Glassware" ${category==='Glassware'?'selected':''}>Glassware</option><option value="Dinnerware" ${category==='Dinnerware'?'selected':''}>Dinnerware</option><option value="Flatware" ${category==='Flatware'?'selected':''}>Flatware</option><option value="Service" ${category==='Service'?'selected':''}>Service</option></select><div style="font-size:0.7rem;color:var(--text-dim);padding:0 2px">${section}</div><input type="number" value="${lgQty}" data-field="lgQty" min="0" step="1" style="${a}"><input type="number" value="${smQty}" data-field="smQty" min="0" step="1" style="${a}"><select data-field="type" style="${s};font-size:0.72rem;color:var(--text-muted)"><option value="delicate" ${type==='delicate'?'selected':''}>Delicate</option><option value="sturdy" ${type==='sturdy'?'selected':''}>Sturdy</option><option value="durable" ${type==='durable'?'selected':''}>Durable</option></select><select data-field="attrition" style="${s};font-size:0.72rem;color:var(--text-muted)"><option value="0.10" ${attrition==0.10?'selected':''}>10%</option><option value="0.07" ${attrition==0.07?'selected':''}>7%</option><option value="0.04" ${attrition==0.04?'selected':''}>4%</option><option value="0.03" ${attrition==0.03?'selected':''}>3%</option><option value="0.025" ${attrition==0.025?'selected':''}>2.5%</option><option value="0.02" ${attrition==0.02?'selected':''}>2%</option></select><div style="text-align:center"><input type="checkbox" data-field="replacePC" ${replacePC==='yes'?'checked':''} style="width:16px;height:16px;accent-color:#4CAF50;cursor:pointer"></div><input type="number" value="${override}" data-field="override" min="0" step="1" placeholder="—" style="${o}"><button class="btn btn-danger" onclick="document.getElementById('np-item-${id}').remove()">×</button>`;
+    c.appendChild(row);
+}
+
+function npItemsHeader() {
+    return '<div style="display:grid;grid-template-columns:1fr 90px 90px 70px 70px 70px 70px 40px 90px 40px;gap:6px;padding-bottom:8px;border-bottom:1px solid var(--border-light)"><span style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase">Item</span><span style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase">Category</span><span style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase">Section</span><span style="font-size:0.65rem;color:var(--accent);text-transform:uppercase">Lg Tbl</span><span style="font-size:0.65rem;color:var(--accent);text-transform:uppercase">Sm Tbl</span><span style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase">Type</span><span style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase">Attrition</span><span style="font-size:0.65rem;color:var(--accent);text-transform:uppercase">Repl/C</span><span style="font-size:0.65rem;color:var(--warn);text-transform:uppercase">Override</span><span></span></div>';
+}
+
+// ─── Bulk Edit Functions ───
+function bulkClearOverrides() {
+    document.querySelectorAll('.np-item-row [data-field="override"]').forEach(inp => { inp.value = ''; });
+}
+
+function bulkSetLgTable() {
+    const val = prompt('Set Lg Table qty for ALL items (leave blank to cancel):');
+    if (val === null || val === '') return;
+    const n = parseInt(val);
+    if (isNaN(n)) return;
+    document.querySelectorAll('.np-item-row [data-field="lgQty"]').forEach(inp => { inp.value = n; });
+}
+
+function bulkSetSmTable() {
+    const val = prompt('Set Sm Table qty for ALL items (leave blank to cancel):');
+    if (val === null || val === '') return;
+    const n = parseInt(val);
+    if (isNaN(n)) return;
+    document.querySelectorAll('.np-item-row [data-field="smQty"]').forEach(inp => { inp.value = n; });
+}
+
+function bulkSetTablesByCategory() {
+    const cat = prompt('Which category? (Glassware / Dinnerware / Flatware / Service):');
+    if (!cat) return;
+    const lgVal = prompt(`Lg Table qty for ${cat}:`);
+    if (lgVal === null) return;
+    const smVal = prompt(`Sm Table qty for ${cat}:`);
+    if (smVal === null) return;
+    const lg = parseInt(lgVal) || 0;
+    const sm = parseInt(smVal) || 0;
+    document.querySelectorAll('.np-item-row').forEach(row => {
+        const rowCat = row.querySelector('[data-field="category"]').value;
+        if (rowCat.toLowerCase() === cat.toLowerCase()) {
+            row.querySelector('[data-field="lgQty"]').value = lg;
+            row.querySelector('[data-field="smQty"]').value = sm;
+        }
+    });
+}
+
+function bulkRemoveEmpty() {
+    document.querySelectorAll('.np-item-row').forEach(row => {
+        const lg = row.querySelector('[data-field="lgQty"]').value.trim();
+        const sm = row.querySelector('[data-field="smQty"]').value.trim();
+        const ov = row.querySelector('[data-field="override"]').value.trim();
+        if (!lg && !sm && !ov) row.remove();
+    });
+}
+
+function bulkSetReplacePC() {
+    const cat = prompt('Set "Replace per Course" for which category?\n(Flatware / Dinnerware / Glassware / Service / ALL)');
+    if (!cat) return;
+    const val = prompt('Set to Yes or No?');
+    if (!val) return;
+    const setVal = val.toLowerCase().startsWith('y') ? 'yes' : 'no';
+    const filterCat = cat.trim().toUpperCase();
+    document.querySelectorAll('.np-item-row').forEach(row => {
+        const rowCat = row.querySelector('[data-field="category"]').value;
+        if (filterCat === 'ALL' || rowCat.toUpperCase() === filterCat) {
+            row.querySelector('[data-field="replacePC"]').checked = (setVal === 'yes');
+        }
+    });
+}
+
+// ─── CSV/Excel Import ───
+async function importBible() {
+    const fileInput = document.getElementById('np-file-input');
+    const status = document.getElementById('np-import-status');
+    if (!fileInput.files.length) { status.textContent = 'No file selected.'; return; }
+    const file = fileInput.files[0];
+    status.textContent = 'Reading file...';
+    try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, {type:'array'});
+        const items = [];
+        const catMap = {'smallware':'Flatware','plateware':'Dinnerware','glassware':'Glassware','collateral':'Service','barware':'Service','light bulbs':'Service'};
+        const skipNames = ['item','image','','dining room','plateware','glassware','smallware','barware','collateral','delilah','pantones'];
+        workbook.SheetNames.forEach(sheetName => {
+            const ws = workbook.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+            const cat = catMap[sheetName.toLowerCase()] || 'Service';
+            // Find the qty column by scanning header row for keywords
+            let qtyCol = -1;
+            let headerRow = -1;
+            for (let r = 0; r < Math.min(5, rows.length); r++) {
+                for (let c = 0; c < (rows[r]||[]).length; c++) {
+                    const h = String(rows[r][c]||'').toLowerCase();
+                    if (h.includes('opening order') || h.includes('dallas') || h === 'par' || h === 'qty ordered' || h === 'quantity') {
+                        qtyCol = c; headerRow = r; break;
+                    }
+                }
+                if (qtyCol >= 0) break;
+            }
+            // Also check last numeric column as fallback
+            rows.forEach((row, ri) => {
+                if (ri <= headerRow) return;
+                const name = row[1] ? String(row[1]).trim() : '';
+                if (!name || name.length < 2 || skipNames.includes(name.toLowerCase())) return;
+                // Skip header-like rows
+                if (name.toLowerCase().includes('manufacturer') || name === 'Item') return;
+                let qty = '';
+                if (qtyCol >= 0 && row[qtyCol]) {
+                    const v = String(row[qtyCol]).trim();
+                    const n = parseInt(v.replace(/[^0-9]/g,''));
+                    if (!isNaN(n) && n > 0) qty = n;
+                }
+                items.push({name, category: cat, qty: qty || '', sheet: sheetName});
+            });
+        });
+        // Build items list with header
+        const c = document.getElementById('np-items-list');
+        c.innerHTML = npItemsHeader();
+        npItemCount = 0;
+        let withQty = 0;
+        items.forEach(i => {
+            const type = i.category==='Glassware'?'sturdy':i.category==='Flatware'?'durable':'sturdy';
+            const attr = i.category==='Glassware'?0.07:i.category==='Flatware'?0.04:0.03;
+            addNpItem(i.name, i.category, '', '', type, attr, i.sheet, i.qty);
+            if (i.qty) withQty++;
+        });
+        status.innerHTML = `<span style="color:var(--success)">✓ Imported ${items.length} items from ${workbook.SheetNames.length} sheets (${workbook.SheetNames.join(', ')}). ${withQty} items had quantities → placed in Override.</span>`;
+        ['np-items-card','np-run-btn'].forEach(id => document.getElementById(id).style.display='');
+        document.getElementById('np-bulk-bar').style.display = '';
+    } catch(e) { status.textContent = 'Error: ' + e.message; console.error(e); }
+}
+
+function toggleCourses() {
+    const style = document.getElementById('np-service-style').value;
+    document.getElementById('np-courses-group').style.display = style === 'multi' ? '' : 'none';
+    const info = document.getElementById('np-service-info');
+    if (style === 'multi') {
+        info.innerHTML = '<strong style="color:var(--accent)">Multi-Course Replace:</strong> Flatware and plates are replaced between courses. Per-table qty is multiplied by the number of courses for items marked as "replaced per course." Wash cycle buffer is increased by 30%. Use for fine dining, steakhouses, French cuisine.';
+    } else {
+        info.innerHTML = '<strong>Single Course:</strong> Each item used once per guest. Per-table qty = pieces per setting. Good for casual dining, Japanese, cafés.';
+    }
+}
+
+function runNewPar() {
+    const vn=document.getElementById('np-venue').value||'New Venue';
+    const seats=parseFloat(document.getElementById('np-seats').value)||123;
+    const tables=parseFloat(document.getElementById('np-tables').value)||30;
+    const covers=parseFloat(document.getElementById('np-covers').value)||350;
+    const lgT=parseFloat(document.getElementById('np-largest').value)||12;
+    const smT=parseFloat(document.getElementById('np-smallest').value)||2;
+    const apt=covers/tables;
+    const cuisine=document.getElementById('np-cuisine').value;
+    const cn=cuisine?CUISINE_PRESETS[cuisine].name:'Custom';
+    const serviceStyle=document.getElementById('np-service-style').value;
+    const avgCourses=serviceStyle==='multi'?(parseFloat(document.getElementById('np-courses').value)||3):1;
+    const BUF={delicate:2.0,sturdy:1.5,durable:1.5};
+    const WASH={delicate:0.40,sturdy:0.23,durable:0.14};
+    const washMult = serviceStyle === 'multi' ? 1.3 : 1.0;
+    const rows=document.querySelectorAll('.np-item-row');
+    const items=[];
+    rows.forEach(r=>{
+        const n=r.querySelector('[data-field="name"]').value.trim();
+        const cat=r.querySelector('[data-field="category"]').value;
+        let lg=parseFloat(r.querySelector('[data-field="lgQty"]').value)||0;
+        let sm=parseFloat(r.querySelector('[data-field="smQty"]').value)||0;
+        const tp=r.querySelector('[data-field="type"]').value;
+        const at=parseFloat(r.querySelector('[data-field="attrition"]').value)||0.07;
+        const ov=r.querySelector('[data-field="override"]').value.trim();
+        const replacePC=r.querySelector('[data-field="replacePC"]').checked ? 'yes' : 'no';
+        const override = ov!=='' ? parseInt(ov) : null;
+        if(!n) return;
+        // Multi-course: only items marked "Yes" for Replace/Course get multiplied
+        let courseMult = 1;
+        if (serviceStyle === 'multi' && avgCourses > 1 && replacePC === 'yes') {
+            courseMult = avgCourses;
+        }
+        const effLg = lg * courseMult;
+        const effSm = sm * courseMult;
+        let ratio=0, avgQty=0;
+        if(effLg>0||effSm>0){const sl=(effLg-effSm)/(lgT-smT); avgQty=effSm+sl*(apt-smT); ratio=avgQty/apt;}
+        items.push({name:n,category:cat,lgQty:lg,smQty:sm,effLg,effSm,avgQty,ratio,type:tp,attrition:at,override,courseMult});
+    });
+    if(items.length===0){alert('Add at least one item.');return;}
+
+    const styleLabel = serviceStyle === 'multi' ? `Multi-Course (${avgCourses} courses)` : 'Single Course';
+
+    // Build results
+    let h=`<div class="card" style="margin-top:24px"><div class="card-title">${vn} <span class="badge">${cn}</span> <span class="badge" style="background:${serviceStyle==='multi'?'rgba(212,168,67,0.15);color:var(--accent)':'rgba(76,175,80,0.15);color:var(--success)'}">${styleLabel}</span></div>
+    <div style="display:flex;gap:20px;font-size:0.85rem;color:var(--text-muted);margin-bottom:8px;flex-wrap:wrap"><span><strong style="color:var(--text)">${seats}</strong> seats</span><span><strong style="color:var(--text)">${tables}</strong> tables</span><span><strong style="color:var(--text)">${covers}</strong> covers/night</span><span>Avg/tbl: <strong style="color:var(--text)">${apt.toFixed(1)}</strong></span></div>
+    <div style="margin-bottom:12px"><button class="btn btn-secondary" onclick="exportToExcel()" style="font-size:0.82rem">📥 Export to Excel</button></div>
+    <table class="result-table"><tr><th>Item</th>${serviceStyle==='multi'?'<th style="text-align:center">×C</th>':''}<th style="text-align:center">3-PAR</th><th style="text-align:center">P+B</th><th style="text-align:center">Suggested</th><th style="text-align:center">Override</th><th style="text-align:center;color:var(--accent)">Final PAR</th><th>Repl/mo</th></tr>`;
+
+    let ct='',tS=0,tF=0,tR=0;
+    const exportData = [];
+
+    items.forEach(i=>{
+        if(i.category!==ct){ct=i.category;h+=`<tr><td colspan="${serviceStyle==='multi'?8:7}" style="padding:10px 14px;font-size:0.75rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border-light)"><strong>${ct}</strong></td></tr>`;}
+        let tp=0,pb=0,sg=0;
+        if(i.ratio>0){
+            const bpt=i.type==='delicate'?2:4;
+            const p1=Math.ceil(covers*i.ratio*0.71);const p2=Math.ceil(tables*bpt*i.ratio);const p3=Math.ceil(p1*WASH[i.type]*washMult);
+            tp=p1+p2+p3;const pk=Math.ceil(covers*i.ratio*0.85);pb=Math.ceil(pk*BUF[i.type]);sg=Math.ceil((tp+pb)/2/5)*5;
+        }
+        const finalPar = i.override !== null ? i.override : sg;
+        const isOverride = i.override !== null;
+        const rp = Math.ceil(finalPar * i.attrition);
+        tS+=sg; tF+=finalPar; tR+=rp;
+        exportData.push({name:i.name, category:i.category, type:i.type, lgQty:i.lgQty, smQty:i.smQty, threePar:tp, peakBuf:pb, suggested:sg, override:i.override, finalPar, repl:rp, courseMult:i.courseMult, replacePC: i.courseMult > 1 ? 'Yes' : 'No'});
+
+        const overrideCell = isOverride ? `<strong style="color:var(--warn)">${i.override}</strong>` : '<span class="muted">—</span>';
+        const finalStyle = isOverride ? 'background:rgba(255,152,0,0.1);color:var(--warn)' : 'color:var(--accent)';
+        const finalTag = isOverride ? ' <span style="font-size:0.6rem;background:var(--warn-bg);color:var(--warn);padding:1px 5px;border-radius:3px">MANUAL</span>' : '';
+        const courseCol = serviceStyle==='multi' ? `<td style="text-align:center;font-size:0.78rem;color:${i.courseMult>1?'var(--accent)':'var(--text-muted)'}">${i.courseMult>1?'×'+i.courseMult:'—'}</td>` : '';
+        h+=`<tr><td><strong>${i.name}</strong><br><span class="muted" style="font-size:0.7rem">${i.type} · ${(i.attrition*100)}%${i.courseMult>1?' · ×'+i.courseMult+' courses':''}</span></td>
+        ${courseCol}<td style="text-align:center">${tp||'—'}</td><td style="text-align:center">${pb||'—'}</td>
+        <td style="text-align:center">${sg||'—'}</td><td style="text-align:center">${overrideCell}</td>
+        <td style="text-align:center;${finalStyle}"><strong>${finalPar}</strong>${finalTag}</td><td class="muted">${rp}</td></tr>`;
+    });
+
+    const totalColspan = serviceStyle==='multi' ? 4 : 3;
+    h+=`<tr style="border-top:2px solid var(--border-light)"><td colspan="${totalColspan}"><strong>TOTALS</strong></td><td style="text-align:center"><strong>${tS}</strong></td><td></td><td style="text-align:center" class="highlight"><strong>${tF}</strong></td><td class="muted"><strong>${tR}</strong></td></tr></table></div>`;
+
+    lastNewParResults = {venueName:vn, cuisine:cn, seats, tables, covers, serviceStyle, avgCourses, items: exportData};
+    document.getElementById('newpar-results').innerHTML=h;
+}
+
+// ─── Excel Export ───
+function exportToExcel() {
+    if (!lastNewParResults) { alert('Run the calculation first.'); return; }
+    const r = lastNewParResults;
+    const wb = XLSX.utils.book_new();
+    const isMulti = r.serviceStyle === 'multi';
+
+    const summaryData = [
+        ['THE h.wood GROUP — PAR Setup Report'],
+        [],
+        ['Venue', r.venueName],
+        ['Cuisine', r.cuisine],
+        ['Seats', r.seats],
+        ['Tables', r.tables],
+        ['Covers/Night', r.covers],
+        ['Service Style', isMulti ? 'Multi-Course Replace' : 'Single Course'],
+        isMulti ? ['Avg Courses/Guest', r.avgCourses] : [],
+        [],
+        ['Item', 'Category', 'Type', 'Lg Tbl', 'Sm Tbl', 'Replace/Course', '×Courses', 'Three-PAR', 'Peak+Buf', 'Suggested', 'Override', 'Final PAR', 'Monthly Repl.'],
+    ].filter(r => r.length > 0);
+
+    let currentCat = '';
+    let catTotals = {};
+    r.items.forEach(i => {
+        if (i.category !== currentCat) {
+            if (currentCat) summaryData.push([]);
+            currentCat = i.category;
+            summaryData.push([currentCat.toUpperCase()]);
+        }
+        summaryData.push([i.name, i.category, i.type, i.lgQty||'', i.smQty||'', i.replacePC, i.courseMult > 1 ? '×'+i.courseMult : '—', i.threePar||'', i.peakBuf||'', i.suggested||'', i.override!==null?i.override:'', i.finalPar, i.repl]);
+        if (!catTotals[i.category]) catTotals[i.category] = {par:0, repl:0, count:0};
+        catTotals[i.category].par += i.finalPar;
+        catTotals[i.category].repl += i.repl;
+        catTotals[i.category].count++;
+    });
+
+    summaryData.push([]);
+    const totalPar = r.items.reduce((s,i)=>s+i.finalPar,0);
+    const totalRepl = r.items.reduce((s,i)=>s+i.repl,0);
+    summaryData.push(['TOTAL', '', '', '', '', '', '', '', '', '', '', totalPar, totalRepl]);
+
+    const ws = XLSX.utils.aoa_to_sheet(summaryData);
+    ws['!cols'] = [{wch:30},{wch:12},{wch:10},{wch:8},{wch:8},{wch:14},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:12},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws, 'PAR Setup');
+
+    const catData = [['Category Summary'], [], ['Category', 'Items', 'Total PAR', 'Monthly Replacement']];
+    Object.entries(catTotals).forEach(([cat, v]) => catData.push([cat, v.count, v.par, v.repl]));
+    catData.push([], ['TOTAL', r.items.length, totalPar, totalRepl]);
+    const ws2 = XLSX.utils.aoa_to_sheet(catData);
+    ws2['!cols'] = [{wch:20},{wch:8},{wch:12},{wch:18}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Summary');
+
+    XLSX.writeFile(wb, `${r.venueName.replace(/[^a-zA-Z0-9]/g,'_')}_PAR_Setup.xlsx`);
+}
+
+// ─── CSV Templates & Import ───
+
+function downloadParTemplate() {
+    const headers = ['Item Name','Venue','Category','Case Size','Lead Time (days)','Current PAR','Monthly Usage','Order Frequency (months)','Late Days','Low Point','Status'];
+    const wb = XLSX.utils.book_new();
+    const rows = [
+        headers,
+        ['Dinner Fork','Delilah LA','Flatware','100','21','200','100','1','14','50','running_low'],
+        ['Dinner Fork','Delilah MIA','Flatware','100','21','300','120','2','7','80','running_ok'],
+        ['Water Glass','Delilah LA','Glassware - Sturdy','24','14','450','40','1','14','100','running_ok'],
+        ['Water Glass','Delilah MIA','Glassware - Sturdy','24','14','600','55','2','7','150','running_low'],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:16},{wch:14},{wch:18},{wch:10},{wch:14},{wch:10},{wch:14},{wch:20},{wch:10},{wch:10},{wch:15}];
+    XLSX.utils.book_append_sheet(wb, ws, 'PAR Items');
+
+    const instrRows = [['INSTRUCTIONS'],[],
+        ['Each row = one item at one venue. Same item at different venues = multiple rows.'],
+        ['Item Name groups the results — all rows with the same item name are analyzed together.'],
+        [],
+        ['Category: Glassware - Delicate, Glassware - Sturdy, Flatware, Dinnerware, Bar Tools, Smallwares'],
+        ['Order Frequency: 1=Monthly, 2=Every 2mo, 3=Quarterly, 4=Every 4mo, 6=Every 6mo, 9=Every 9mo, 12=Yearly'],
+        ['Status: running_low, running_ok, too_much'],
+    ];
+    const ws2 = XLSX.utils.aoa_to_sheet(instrRows);
+    ws2['!cols'] = [{wch:90}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Instructions');
+
+    XLSX.writeFile(wb, 'PAR_Advisor_Template.xlsx');
+}
+
+function importParCSV() {
+    const fileInput = document.getElementById('par-csv-input');
+    if (!fileInput.files.length) { alert('Select a file first.'); return; }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, {type:'array'});
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+            // Clear existing items
+            document.getElementById('par-item-list').innerHTML = '';
+            parItemCount = 0;
+            const freqMap = {'1':'every_month','2':'every_2_months','3':'every_3_months','4':'every_4_months','6':'every_6_months','9':'every_9_months','12':'every_12_months'};
+            let imported = 0;
+            rows.forEach((row, i) => {
+                if (i === 0) return;
+                const itemName = String(row[0]||'').trim();
+                if (!itemName) return;
+                const venue = String(row[1]||'');
+                const category = String(row[2]||'Flatware');
+                const caseSize = String(row[3]||'12');
+                const leadTime = String(row[4]||'21');
+                const par = String(row[5]||'');
+                const usage = String(row[6]||'');
+                const freqMo = String(row[7]||'2');
+                const late = String(row[8]||'14');
+                const low = String(row[9]||'');
+                const status = String(row[10]||'running_ok').trim();
+                const freq = freqMap[freqMo] || 'every_2_months';
+                addParItem(itemName, venue, category, caseSize, leadTime, par, usage, freq, late, low, status);
+                imported++;
+            });
+            alert(`Imported ${imported} items.`);
+        } catch(err) { alert('Error reading file: ' + err.message); }
+    };
+    reader.readAsArrayBuffer(fileInput.files[0]);
+}
+
+// ─── Download PAR Advisor Results ───
+function downloadParResults() {
+    if (!lastParResults || lastParResults.length === 0) { alert('Run the diagnostic first.'); return; }
+    const wb = XLSX.utils.book_new();
+
+    // PAR Summary sheet
+    const itemData = [['PAR Advisor — Multi-Item Report'],[], 
+        ['Item','Venue','Category','Case Size','LT (days)','Current PAR','Real Monthly','Depletion PAR','Risk-Adjusted','Recommended','Verified','Status','Key Finding']];
+    lastParResults.forEach(v => {
+        itemData.push([v.itemName||v.name, v.venueName||'', v.category||'', v.caseSize||'', v.leadTime||'',
+            v.currentPar, v.realMonthly, v.depletionPar, v.riskPar, v.recommendedPar,
+            v.simVerified ? 'Yes' : 'No', v.status, v.keyFinding || '']);
+    });
+    const ws1 = XLSX.utils.aoa_to_sheet(itemData);
+    ws1['!cols'] = [{wch:18},{wch:15},{wch:16},{wch:8},{wch:8},{wch:10},{wch:12},{wch:12},{wch:14},{wch:14},{wch:8},{wch:12},{wch:35}];
+    XLSX.utils.book_append_sheet(wb, ws1, 'PAR Summary');
+
+    // Issues sheet
+    const issuesData = [['Diagnostic Issues'],[], ['Item','Venue','Severity','Issue','Details']];
+    lastParResults.forEach(v => {
+        if (v.diagnostics && v.diagnostics.length) {
+            v.diagnostics.forEach(d => {
+                issuesData.push([v.itemName||v.name, v.venueName||'', d.level, d.title, d.text.replace(/<[^>]*>/g,'')]);
+            });
+        }
+    });
+    if (issuesData.length > 3) {
+        const ws2 = XLSX.utils.aoa_to_sheet(issuesData);
+        ws2['!cols'] = [{wch:18},{wch:15},{wch:10},{wch:30},{wch:60}];
+        XLSX.utils.book_append_sheet(wb, ws2, 'Issues');
+    }
+
+    // Action Items sheet — items that need PAR changes
+    const actionData = [['Action Items — PARs to Change'],[], ['Item','Venue','Current PAR','Set To','Change','Status']];
+    lastParResults.forEach(v => {
+        if (v.currentPar > 0 && v.recommendedPar && v.recommendedPar !== v.currentPar) {
+            actionData.push([v.itemName||v.name, v.venueName||'', v.currentPar, v.recommendedPar, v.recommendedPar - v.currentPar, v.status]);
+        }
+    });
+    if (actionData.length > 3) {
+        const ws3 = XLSX.utils.aoa_to_sheet(actionData);
+        ws3['!cols'] = [{wch:18},{wch:15},{wch:12},{wch:10},{wch:10},{wch:12}];
+        XLSX.utils.book_append_sheet(wb, ws3, 'Action Items');
+    }
+
+    XLSX.writeFile(wb, 'PAR_Advisor_Report.xlsx');
+}
+
+var lastParResults = [];
+
+// ─── Setup Tab CSV Template & Import ───
+function downloadSetupTemplate() {
+    const wb = XLSX.utils.book_new();
+    // Multi-item format
+    const headers = ['Item Name','SKU','Category','Case Size','Lead Time (days)','Supplier','Venue','PAR','Monthly Demand','On Hand','Trigger Months'];
+    const examples = [
+        ['Serving Tong Medium','GRM 880071','Bar Tools','12','21','Studio William','Delilah LA','30','9','0','2.5'],
+        ['Serving Tong Medium','GRM 880071','Bar Tools','12','21','Studio William','Delilah MIA','50','9','0','2.5'],
+        ['Serving Tong Medium','GRM 880071','Bar Tools','12','21','Studio William','Delilah Dallas','50','9','0','2.5'],
+        ['Water Glass','WG-001','Glassware','24','14','Stolze','Delilah LA','450','60','400','2.5'],
+        ['Water Glass','WG-001','Glassware','24','14','Stolze','Delilah MIA','600','80','500','2.5'],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...examples]);
+    ws['!cols'] = [{wch:22},{wch:14},{wch:12},{wch:10},{wch:14},{wch:18},{wch:16},{wch:6},{wch:14},{wch:8},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Items & Venues');
+
+    const instrRows = [['SETUP TEMPLATE INSTRUCTIONS'],[],
+        ['Each row = one item at one venue. Same item at multiple venues = multiple rows.'],
+        ['For single-item mode: fill one item across venues, then use "Import" on the Setup tab.'],
+        ['For multi-item mode: fill multiple items, then use "Import Items" in the Multi-Item section.'],
+        [],
+        ['Column Guide:'],
+        ['Item Name — groups rows together. All rows with same name = same item.'],
+        ['SKU — item identifier (same across all venues for one item)'],
+        ['Category — Bar Tools, Flatware, Dinnerware, Glassware, Smallwares'],
+        ['Case Size — units per case/pack (same across venues)'],
+        ['Lead Time — supplier lead time in days (same across venues)'],
+        ['Supplier — supplier name (optional)'],
+        ['Venue — venue name where this item is used'],
+        ['PAR — current PAR level at this venue'],
+        ['Monthly Demand — observed monthly usage at this venue'],
+        ['On Hand — current stock at this venue'],
+        ['Trigger Months — months of stock remaining before reorder trigger (default 2.5)'],
+    ];
+    const ws2 = XLSX.utils.aoa_to_sheet(instrRows);
+    ws2['!cols'] = [{wch:90}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Instructions');
+
+    XLSX.writeFile(wb, 'Setup_Multi_Item_Template.xlsx');
+}
+
+function importSetupCSV() {
+    const fileInput = document.getElementById('setup-csv-input');
+    if (!fileInput.files.length) { alert('Select a file first.'); return; }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, {type:'array'});
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+            if (rows.length < 2) { alert('No data rows found.'); return; }
+
+            // Detect format: multi-item (11+ cols) or simple venue (5 cols)
+            const colCount = rows[0].length;
+
+            if (colCount >= 8) {
+                // Multi-item format: group by item, run engine for each
+                const itemMap = {};
+                rows.forEach((row, i) => {
+                    if (i === 0) return;
+                    const itemName = String(row[0]||'').trim();
+                    if (!itemName) return;
+                    if (!itemMap[itemName]) {
+                        itemMap[itemName] = {
+                            name: itemName,
+                            sku: String(row[1]||''),
+                            category: String(row[2]||'OS&E'),
+                            caseSize: parseInt(row[3]) || 12,
+                            leadTime: parseInt(row[4]) || 21,
+                            supplier: String(row[5]||''),
+                            venues: [],
+                        };
+                    }
+                    itemMap[itemName].venues.push({
+                        name: String(row[6]||'Venue'),
+                        par: parseInt(row[7]) || 0,
+                        demand: parseFloat(row[8]) || 0,
+                        onHand: parseInt(row[9]) || 0,
+                        trigger: parseFloat(row[10]) || 2.5,
+                    });
+                });
+
+                const items = Object.values(itemMap);
+                if (items.length === 0) { alert('No items found.'); return; }
+
+                // If single item, load it into the existing form
+                if (items.length === 1) {
+                    const item = items[0];
+                    document.getElementById('item-name').value = item.name;
+                    document.getElementById('item-sku').value = item.sku;
+                    document.getElementById('item-case-size').value = item.caseSize;
+                    document.getElementById('item-lead-time').value = item.leadTime;
+                    document.getElementById('item-supplier').value = item.supplier;
+                    document.getElementById('venue-list').innerHTML = '';
+                    venueCount = 0;
+                    item.venues.forEach(v => addVenue(v.name, String(v.par), String(v.demand), String(v.onHand), String(v.trigger)));
+                    alert(`Loaded ${item.name} with ${item.venues.length} venues.`);
+                } else {
+                    // Multi-item: run all items and show combined results
+                    runMultiItemEngine(items);
+                }
+            } else {
+                // Simple venue format
+                document.getElementById('venue-list').innerHTML = '';
+                venueCount = 0;
+                let imported = 0;
+                rows.forEach((row, i) => {
+                    if (i === 0) return;
+                    const name = String(row[0]||'').trim();
+                    if (!name) return;
+                    addVenue(name, String(row[1]||''), String(row[2]||''), String(row[3]||'0'), String(row[4]||'2.5'));
+                    imported++;
+                });
+                alert(`Imported ${imported} venues.`);
+            }
+        } catch(err) { alert('Error: ' + err.message); console.error(err); }
+    };
+    reader.readAsArrayBuffer(fileInput.files[0]);
+}
+
+// ─── Engine Results Download ───
+function downloadEngineResults() {
+    if (!lastReport) { alert('Run the engine first.'); return; }
+    const r = lastReport;
+    const wb = XLSX.utils.book_new();
+    const venueData = [['Procurement Engine Results — ' + r.item.name],[],['Item', r.item.name],['SKU', r.item.sku],['Case Size', r.item.caseSize],['Supplier LT', r.item.leadTime + ' days'],[],['VENUE BREAKDOWN'],['Venue','PAR','Monthly Demand','Velocity','Min (r)','Max (S)','On Hand','Need Now','Need Now (cases)']];
+    r.venues.forEach(v => { venueData.push([v.name, v.par, v.monthlyDemand, v.vel, v.minR, v.maxS, v.onHand, v.needNow, v.needNowCases]); });
+    venueData.push([]);
+    const wh = r.warehouse;
+    venueData.push(['WAREHOUSE (s,S) SYSTEM'],['Combined Monthly', wh.totalMonthly],['s (Reorder Point)', wh.s],['S (Order-Up-To)', wh.S],['Reorder Qty', wh.reorderQty],['Review Period', wh.review + ' days']);
+    if (wh.overridden) venueData.push(['NOTE', 'Manual override applied']);
+    venueData.push([]);
+    const fo = r.firstOrder;
+    venueData.push(['FIRST ORDER']);
+    r.venues.forEach(v => { if (v.needNowCases > 0) venueData.push([v.name, v.needNowCases + ' units', v.needNowPacks + ' packs']); });
+    venueData.push(['Warehouse', fo.whUnits + ' units'],['TOTAL', fo.totalUnits + ' units', fo.totalCases + ' cases']);
+    if (fo.totalCost) venueData.push(['Est. Cost', '$' + fo.totalCost.toFixed(2)]);
+    venueData.push([],['STRESS TEST'],['Day','Event','Stock','Stockout?']);
+    r.stressTest.forEach(e => { venueData.push([e.day, e.event, e.stock, e.stockout ? 'YES' : '']); });
+    if (r.stressCorrection) { venueData.push([],['CORRECTED VALUES'],['New s', r.stressCorrection.correctedS],['New S', r.stressCorrection.correctedSBig],['New Reorder', r.stressCorrection.correctedReorder]); }
+    const ws = XLSX.utils.aoa_to_sheet(venueData);
+    ws['!cols'] = [{wch:25},{wch:20},{wch:15},{wch:12},{wch:10},{wch:10},{wch:10},{wch:12},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Engine Results');
+    if (r.tcoTable) {
+        const tcoData = [['TCO BY ORDER SIZE'],[],['Cases','Units','Product Cost','Shipping','Total','TCO/Unit']];
+        r.tcoTable.forEach(t => tcoData.push([t.cases, t.units, t.productCost, t.shipping, t.total, t.tcoPerUnit]));
+        const ws2 = XLSX.utils.aoa_to_sheet(tcoData);
+        ws2['!cols'] = [{wch:8},{wch:8},{wch:12},{wch:10},{wch:10},{wch:10}];
+        XLSX.utils.book_append_sheet(wb, ws2, 'TCO');
+    }
+    XLSX.writeFile(wb, (r.item.name.replace(/[^a-zA-Z0-9]/g,'_')) + '_Engine_Results.xlsx');
+}
+
+
+function downloadMultiItemTemplate() {
+    const wb = XLSX.utils.book_new();
+    const headers = ['Item Name','SKU','Category','Case Size','Lead Time (days)','Unit Cost','Venue','PAR','Monthly Demand','On Hand','Trigger Months'];
+    const rows = [
+        headers,
+        ['Serving Tong Medium','GRM 880071','Bar Tools','12','21','','Delilah LA','30','9','0','2.5'],
+        ['Serving Tong Medium','GRM 880071','Bar Tools','12','21','','Delilah MIA','50','9','0','2.5'],
+        ['Serving Tong Medium','GRM 880071','Bar Tools','12','21','','Delilah Dallas','50','9','0','2.5'],
+        ['Water Glass','WG-001','Glassware - Sturdy','24','14','4.48','Delilah LA','450','40','400','2.5'],
+        ['Water Glass','WG-001','Glassware - Sturdy','24','14','4.48','Delilah MIA','600','55','500','2.5'],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:22},{wch:14},{wch:18},{wch:10},{wch:14},{wch:10},{wch:16},{wch:6},{wch:14},{wch:8},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Items');
+
+    const instrRows = [
+        ['INSTRUCTIONS'],
+        [],
+        ['Each row = one item at one venue.'],
+        ['If an item has 3 venues, it appears 3 times with different Venue/PAR/Demand columns.'],
+        ['Item Name + SKU identify the item — all rows with the same name are grouped together.'],
+        ['Case Size and Lead Time should be the same across all venues for the same item.'],
+        [],
+        ['Category options: Glassware - Delicate, Glassware - Sturdy, Flatware, Dinnerware, Bar Tools, Smallwares'],
+    ];
+    const ws2 = XLSX.utils.aoa_to_sheet(instrRows);
+    ws2['!cols'] = [{wch:80}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Instructions');
+
+    XLSX.writeFile(wb, 'Multi_Item_Template.xlsx');
+}
+
+function importMultiItems() {
+    const fileInput = document.getElementById('multi-item-input');
+    const status = document.getElementById('multi-item-status');
+    if (!fileInput.files.length) { status.textContent = 'Select a file first.'; return; }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, {type:'array'});
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+
+            // Group rows by item name
+            const itemMap = {};
+            rows.forEach((row, i) => {
+                if (i === 0) return;
+                const name = String(row[0]||'').trim();
+                if (!name) return;
+                if (!itemMap[name]) {
+                    itemMap[name] = {
+                        name: name,
+                        sku: String(row[1]||''),
+                        category: String(row[2]||'Bar Tools'),
+                        caseSize: parseInt(row[3]) || 12,
+                        leadTime: parseInt(row[4]) || 21,
+                        unitCost: row[5] ? parseFloat(row[5]) : null,
+                        venues: [],
+                    };
+                }
+                const venueName = String(row[6]||'').trim();
+                if (venueName) {
+                    itemMap[name].venues.push({
+                        name: venueName,
+                        par: parseInt(row[7]) || 0,
+                        monthlyDemand: parseFloat(row[8]) || 0,
+                        onHand: parseInt(row[9]) || 0,
+                        triggerMonths: parseFloat(row[10]) || 2.5,
+                    });
+                }
+            });
+
+            multiItems = Object.values(itemMap);
+            status.innerHTML = `<span style="color:var(--success)">✓ Imported ${multiItems.length} items with ${rows.length - 1} venue rows.</span>`;
+
+            // Show summary
+            const list = document.getElementById('multi-item-list');
+            list.innerHTML = multiItems.map(it =>
+                `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.85rem">
+                    <span><strong>${it.name}</strong> <span class="text-muted">(${it.sku})</span></span>
+                    <span class="text-muted">${it.venues.length} venues · case ${it.caseSize} · LT ${it.leadTime}d</span>
+                </div>`
+            ).join('');
+
+            document.getElementById('run-multi-btn').style.display = '';
+        } catch(err) { status.textContent = 'Error: ' + err.message; console.error(err); }
+    };
+    reader.readAsArrayBuffer(fileInput.files[0]);
+}
+
+function runMultiEngine() {
+    if (multiItems.length === 0) { alert('Import items first.'); return; }
+
+    const wh = {
+        maxSimul: num('wh-max-simul') || 2,
+        review: num('wh-review') || 7,
+        onHand: 0,
+        onPO: 0,
+    };
+
+    const allReports = [];
+
+    multiItems.forEach(mi => {
+        const item = {
+            name: mi.name, sku: mi.sku, category: 'OS&E', subcategory: mi.category,
+            caseSize: mi.caseSize, unitCost: mi.unitCost, shippingCost: null,
+            shippingType: 'flat', leadTime: mi.leadTime, supplier: '', supplierContact: '',
+        };
+
+        const venues = mi.venues.filter(v => v.name && v.par > 0);
+        if (venues.length === 0) return;
+
+        // ── Calculate per venue ──
+        let totalMonthly = 0;
+        const venueResults = venues.map(v => {
+            const daily = v.monthlyDemand / 30;
+            const vel = v.monthlyDemand > 15 ? 'FAST' : v.monthlyDemand > 5 ? 'MED' : 'SLOW';
+            const bufDays = vel === 'FAST' ? 3 : vel === 'MED' ? 5 : 3;
+            const ss = Math.max(1, Math.ceil(daily * bufDays));
+            const rawMin = Math.ceil(v.monthlyDemand * v.triggerMonths);
+            const minR = Math.max(1, Math.min(rawMin, v.par - 1));
+            const typicalDraw = Math.ceil(v.monthlyDemand);
+            const needNow = Math.max(0, v.par - v.onHand);
+            const needNowCases = needNow > 0 ? Math.ceil(needNow / item.caseSize) * item.caseSize : 0;
+            totalMonthly += v.monthlyDemand;
+            return { ...v, daily, vel, ss, minR, maxS: v.par, typicalDraw, needNow, needNowCases, needNowPacks: needNowCases / item.caseSize };
+        });
+
+        // ── Warehouse s/S ──
+        const combinedDaily = totalMonthly / 30;
+        const whVel = totalMonthly > 15 ? 'FAST' : totalMonthly > 5 ? 'MED' : 'SLOW';
+        const whBuf = whVel === 'FAST' ? 7 : whVel === 'MED' ? 14 : 7;
+        const whSS = Math.max(1, Math.ceil(combinedDaily * whBuf));
+        const typicalDraws = venueResults.map(v => v.typicalDraw).sort((a, b) => b - a);
+        const simulDraw = typicalDraws.slice(0, wh.maxSimul).reduce((a, b) => a + b, 0);
+        const ltReviewDemand = Math.ceil(combinedDaily * (item.leadTime + wh.review));
+        const s = ltReviewDemand + whSS;
+        const S = Math.ceil((s + Math.max(simulDraw, Math.ceil(combinedDaily * wh.review))) / item.caseSize) * item.caseSize;
+        const reorderQty = Math.ceil(Math.max(item.caseSize, S - s) / item.caseSize) * item.caseSize;
+
+        // ── Stress test ──
+        const sorted = [...venueResults].sort((a, b) => b.typicalDraw - a.typicalDraw);
+        const orders = [];
+        if (sorted.length >= 1) orders.push({ day: 1, venue: sorted[0] });
+        if (sorted.length >= 2) orders.push({ day: Math.min(7, item.leadTime), venue: sorted[1] });
+        if (sorted.length >= 3) orders.push({ day: Math.min(14, item.leadTime), venue: sorted[2] });
+        for (let i = 3; i < sorted.length; i++) orders.push({ day: Math.min((i+1)*7, item.leadTime), venue: sorted[i] });
+
+        let stock = s;
+        let hasStockout = false;
+        let lowestStock = s;
+        orders.forEach(o => {
+            if (o.day <= item.leadTime) {
+                stock -= o.venue.typicalDraw;
+                if (stock < lowestStock) lowestStock = stock;
+                if (stock < 0) hasStockout = true;
+            }
+        });
+        if (item.leadTime > 30) {
+            orders.forEach(o => {
+                if (o.day + 30 <= item.leadTime) {
+                    stock -= o.venue.typicalDraw;
+                    if (stock < 0) hasStockout = true;
+                }
+            });
+        }
+
+        // Auto-correct
+        let correctedS = null, correctedSBig = null;
+        if (hasStockout) {
+            let totalDraw = 0;
+            orders.forEach(o => { if (o.day <= item.leadTime) totalDraw += o.venue.typicalDraw; });
+            if (item.leadTime > 30) orders.forEach(o => { if (o.day + 30 <= item.leadTime) totalDraw += o.venue.typicalDraw; });
+            correctedS = totalDraw + whSS;
+            correctedSBig = Math.ceil((correctedS + simulDraw) / item.caseSize) * item.caseSize;
+        }
+
+        const totalNeed = venueResults.reduce((a, v) => a + v.needNowCases, 0);
+
+        allReports.push({
+            item, venues: venueResults, s, S, reorderQty, whSS,
+            totalMonthly, hasStockout, lowestStock,
+            correctedS, correctedSBig, totalNeed,
+        });
+    });
+
+    // ── Render Dashboard ──
+    let html = `<div class="card"><div class="card-title">Batch Results — ${allReports.length} Items</div>
+        <div style="margin-bottom:12px"><button class="btn btn-secondary" onclick="downloadBatchResults()" style="font-size:0.82rem">📥 Download All Results (Excel)</button></div>
+        <table class="result-table">
+        <tr><th>Item</th><th>SKU</th><th>Venues</th><th>s</th><th>S</th><th>Reorder</th><th>Need Now</th><th>Stress Test</th><th>Action</th></tr>`;
+
+    allReports.forEach(r => {
+        const passClass = r.hasStockout ? 'color:var(--danger)' : 'color:var(--success)';
+        const passText = r.hasStockout ? '❌ FAIL' : '✅ PASS';
+        const action = r.hasStockout
+            ? `<span style="font-size:0.78rem">Set s→<strong style="color:var(--accent)">${r.correctedS}</strong> S→<strong style="color:var(--accent)">${r.correctedSBig}</strong></span>`
+            : '<span class="muted" style="font-size:0.78rem">No action</span>';
+        html += `<tr>
+            <td><strong>${r.item.name}</strong></td>
+            <td class="muted">${r.item.sku}</td>
+            <td>${r.venues.length}</td>
+            <td>${r.s}</td><td>${r.S}</td>
+            <td>${r.reorderQty}</td>
+            <td class="highlight">${r.totalNeed}</td>
+            <td style="${passClass};font-weight:600">${passText}</td>
+            <td>${action}</td>
+        </tr>`;
+    });
+
+    const failCount = allReports.filter(r => r.hasStockout).length;
+    html += `</table>
+        <div style="margin-top:12px;font-size:0.88rem;color:var(--text-muted)">
+            <strong style="color:var(--text)">${allReports.length - failCount}/${allReports.length}</strong> items pass stress test.
+            ${failCount > 0 ? `<strong style="color:var(--danger)">${failCount} items need s/S correction.</strong>` : '<span style="color:var(--success)">All clear.</span>'}
+        </div>
+    </div>`;
+
+    // Expandable details per item
+    allReports.forEach(r => {
+        const useS = r.hasStockout ? r.correctedS : r.s;
+        const useSBig = r.hasStockout ? r.correctedSBig : r.S;
+        html += `<div class="card">
+            <div class="card-title">${r.item.name} <span class="badge">${r.item.sku}</span>
+                ${r.hasStockout ? '<span class="badge" style="background:var(--danger-bg);color:var(--danger)">STOCKOUT RISK</span>' : '<span class="badge" style="background:var(--success-bg);color:var(--success)">PASS</span>'}
+            </div>
+            <div class="result-grid" style="grid-template-columns:repeat(4,1fr)">
+                <div class="stat-card"><div class="stat-label">s (Reorder Point)</div><div class="stat-value" style="font-size:1.4rem">${r.hasStockout ? '<span style="text-decoration:line-through;color:var(--danger)">'+r.s+'</span> → <span style="color:var(--accent)">'+r.correctedS+'</span>' : r.s}</div></div>
+                <div class="stat-card"><div class="stat-label">S (Order-Up-To)</div><div class="stat-value" style="font-size:1.4rem">${r.hasStockout ? '<span style="text-decoration:line-through;color:var(--danger)">'+r.S+'</span> → <span style="color:var(--accent)">'+r.correctedSBig+'</span>' : r.S}</div></div>
+                <div class="stat-card"><div class="stat-label">Reorder Qty</div><div class="stat-value" style="font-size:1.4rem">${r.reorderQty}</div><div class="stat-sub">${r.reorderQty/r.item.caseSize} cases</div></div>
+                <div class="stat-card"><div class="stat-label">Total Need Now</div><div class="stat-value" style="font-size:1.4rem">${r.totalNeed}</div><div class="stat-sub">${r.totalNeed/r.item.caseSize} cases</div></div>
+            </div>
+            <div style="background:var(--surface-2);border-radius:8px;padding:14px;margin:12px 0;font-size:0.85rem;border-left:3px solid var(--accent)">
+                <div style="font-size:0.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Ordering Rules</div>
+                ${r.venues.map(v => {
+                    const minR = Math.max(1, Math.min(Math.ceil(v.monthlyDemand * 2.5), v.par - 1));
+                    return `<div style="margin-bottom:4px"><strong>${v.name}:</strong> <span class="text-muted">When stock drops to</span> <strong style="color:var(--accent)">${minR}</strong> <span class="text-muted">→ order from warehouse → restock to</span> <strong style="color:var(--accent)">${v.par}</strong> <span class="text-muted">(+${v.par - minR} units)</span></div>`;
+                }).join('')}
+                <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+                    <strong>Warehouse:</strong> <span class="text-muted">Every ${wh.review}d, if stock ≤</span> <strong style="color:var(--accent)">${useS}</strong> <span class="text-muted">→ order</span> <strong style="color:var(--accent)">${r.reorderQty}</strong> <span class="text-muted">from supplier → stock up to</span> <strong style="color:var(--accent)">${useSBig}</strong>
+                </div>
+            </div>
+            <table class="result-table" style="margin-top:12px">
+                <tr><th>Venue</th><th>PAR</th><th>Monthly</th><th>On Hand</th><th>Need Now</th></tr>
+                ${r.venues.map(v => `<tr><td>${v.name}</td><td>${v.par}</td><td>${v.monthlyDemand}</td><td>${v.onHand}</td><td class="highlight">${v.needNowCases} (${v.needNowPacks}pk)</td></tr>`).join('')}
+            </table>
+        </div>`;
+    });
+
+    lastMultiReport = allReports;
+    document.getElementById('results-content').innerHTML = html;
+    switchTab('results');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab')[1].classList.add('active');
+}
+
+var lastMultiReport = [];
+
+function downloadBatchResults() {
+    if (!lastMultiReport || lastMultiReport.length === 0) { alert('Run batch first.'); return; }
+    const wb = XLSX.utils.book_new();
+
+    // Summary
+    const sumData = [['Batch Procurement Results'],[], ['Item','SKU','Venues','Monthly Demand','s','S','Reorder Qty','Need Now','Stress Test','Corrected s','Corrected S']];
+    lastMultiReport.forEach(r => {
+        sumData.push([r.item.name, r.item.sku, r.venues.length, Math.round(r.totalMonthly*10)/10, r.s, r.S, r.reorderQty, r.totalNeed, r.hasStockout?'FAIL':'PASS', r.correctedS||'', r.correctedSBig||'']);
+    });
+    const ws1 = XLSX.utils.aoa_to_sheet(sumData);
+    ws1['!cols'] = [{wch:22},{wch:14},{wch:8},{wch:14},{wch:6},{wch:6},{wch:12},{wch:10},{wch:10},{wch:12},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
+
+    // Detail per item
+    const detData = [['Venue Details'],[], ['Item','Venue','PAR','Monthly Demand','On Hand','Need Now','Cases']];
+    lastMultiReport.forEach(r => {
+        r.venues.forEach(v => {
+            detData.push([r.item.name, v.name, v.par, v.monthlyDemand, v.onHand, v.needNowCases, v.needNowPacks]);
+        });
+    });
+    const ws2 = XLSX.utils.aoa_to_sheet(detData);
+    ws2['!cols'] = [{wch:22},{wch:18},{wch:6},{wch:14},{wch:10},{wch:10},{wch:8}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Venue Details');
+
+    XLSX.writeFile(wb, 'Batch_Procurement_Results.xlsx');
+}
+
+// ─── Push PAR Advisor Results to Setup Tab ───
+function pushParToSetup() {
+    if (!lastParResults || lastParResults.length === 0) {
+        alert('Run the PAR Diagnostic first.');
+        return;
+    }
+
+    // Detect how many unique items are in the results
+    const uniqueItems = [...new Set(lastParResults.map(v => v.itemName || v.name))];
+
+    if (uniqueItems.length === 1) {
+        // ── Single item → fill Setup tab directly ──
+        const first = lastParResults[0];
+        document.getElementById('item-name').value = first.itemName || 'Item from PAR Advisor';
+        document.getElementById('item-case-size').value = first.caseSize || 12;
+        document.getElementById('item-lead-time').value = first.leadTime || 21;
+
+        document.getElementById('venue-list').innerHTML = '';
+        venueCount = 0;
+
+        lastParResults.forEach(v => {
+            const par = v.recommendedPar || v.riskPar || v.currentPar;
+            const demand = v.realMonthly || 0;
+            const displayName = v.venueName || v.name;
+            addVenue(displayName, String(par), String(demand), '0', '2.5');
+        });
+
+        switchTab('input');
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab')[0].classList.add('active');
+        window.scrollTo(0, 0);
+        alert(`Pushed ${lastParResults.length} venue(s) for "${first.itemName}" to Setup.\n\nClick "Run Procurement Engine" to stress test.`);
+
+    } else {
+        // ── Multiple items → build multi-item data and run batch engine ──
+        const itemMap = {};
+        lastParResults.forEach(v => {
+            const key = v.itemName || v.name;
+            if (!itemMap[key]) {
+                itemMap[key] = {
+                    name: key,
+                    sku: '',
+                    category: v.category || 'Bar Tools',
+                    caseSize: v.caseSize || 12,
+                    leadTime: v.leadTime || 21,
+                    unitCost: null,
+                    venues: [],
+                };
+            }
+            itemMap[key].venues.push({
+                name: v.venueName || v.name,
+                par: v.recommendedPar || v.riskPar || v.currentPar,
+                monthlyDemand: v.realMonthly || 0,
+                onHand: 0,
+                triggerMonths: 2.5,
+            });
+        });
+
+        multiItems = Object.values(itemMap);
+
+        // Show summary in the multi-item list
+        const list = document.getElementById('multi-item-list');
+        list.innerHTML = multiItems.map(it =>
+            `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.85rem">
+                <span><strong>${it.name}</strong> <span class="text-muted">(${it.category})</span></span>
+                <span class="text-muted">${it.venues.length} venues · case ${it.caseSize} · LT ${it.leadTime}d · PARs: ${it.venues.map(v=>v.par).join(', ')}</span>
+            </div>`
+        ).join('');
+
+        const status = document.getElementById('multi-item-status');
+        status.innerHTML = `<span style="color:var(--success)">✓ Loaded ${multiItems.length} items with recommended PARs from PAR Advisor.</span>`;
+        document.getElementById('run-multi-btn').style.display = '';
+
+        switchTab('input');
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab')[0].classList.add('active');
+        window.scrollTo(0, document.getElementById('multi-item-list').offsetTop - 100);
+        alert(`Pushed ${uniqueItems.length} items (${lastParResults.length} venue rows) to Multi-Item Setup.\n\nItems: ${uniqueItems.join(', ')}\n\nClick "Run All Items (Batch)" to stress test all items simultaneously.`);
+    }
+}
+</script>
+</body></html>

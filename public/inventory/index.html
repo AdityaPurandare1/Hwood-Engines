@@ -1,0 +1,3123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>H.Wood Inventory Workflow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300..900;1,300..900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────
+   Woody Design System — bone/ink minimalism
+   ───────────────────────────────────────────── */
+:root {
+  /* Woody base tokens */
+  --woody-ink:           rgb(26, 26, 28);
+  --woody-ink-2:         rgb(35, 31, 32);
+  --woody-ink-3:         rgb(61, 61, 64);
+  --woody-ink-4:         rgb(92, 92, 96);
+  --woody-mute:          rgb(134, 129, 128);
+  --woody-mute-2:        rgb(145, 140, 139);
+  --woody-line:          rgb(154, 154, 158);
+  --woody-line-soft:     rgb(217, 217, 217);
+  --woody-line-warm:     rgb(235, 232, 227);
+  --woody-bone:          rgb(255, 249, 245);
+  --woody-paper:         rgb(245, 243, 239);
+  --woody-white:         rgb(255, 255, 255);
+  --woody-info:          rgb(104, 130, 168);  /* slate-blue */
+  --woody-success:       rgb(74, 143, 122);   /* sage */
+  --woody-error:         rgb(163, 27, 0);     /* oxide red */
+  --woody-warm:          rgb(184, 135, 90);   /* tan accent */
+  --woody-warm-2:        rgb(197, 154, 109);  /* tan light */
+
+  /* Aliased tokens — preserved names so JS string templates still resolve */
+  --bg-deep:             var(--woody-bone);
+  --bg-surface:          var(--woody-paper);
+  --bg-elevated:         var(--woody-white);
+  --bg-hover:            rgba(35, 31, 32, 0.04);
+  --border:              var(--woody-line-warm);
+  --border-active:       var(--woody-ink);
+  --text-primary:        var(--woody-ink-2);
+  --text-secondary:      var(--woody-ink-3);
+  --text-muted:          var(--woody-ink-4);
+  --accent:              var(--woody-ink);            /* primary action = ink */
+  --accent-dim:          rgba(35, 31, 32, 0.06);
+
+  /* Severity palette (Woody-tuned) */
+  --critical:            var(--woody-error);
+  --critical-bg:         rgba(163, 27, 0, 0.07);
+  --high:                var(--woody-warm);
+  --high-bg:             rgba(184, 135, 90, 0.10);
+  --medium:              var(--woody-warm-2);
+  --medium-bg:           rgba(197, 154, 109, 0.10);
+  --watch:               var(--woody-info);
+  --watch-bg:            rgba(104, 130, 168, 0.10);
+  --low:                 var(--woody-success);
+  --low-bg:              rgba(74, 143, 122, 0.10);
+  --success:             var(--woody-success);
+  --error:               var(--woody-error);
+
+  --radius:              6px;
+  --mono:                "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --serif:               "Roboto", Arial, Helvetica, sans-serif;
+  --sans:                "Roboto", Arial, Helvetica, system-ui, sans-serif;
+  --shadow-1:            0 1px 2px 0 rgba(61,61,64,0.20);
+  --shadow-2:            0 4px 12px 0 rgba(61,61,64,0.10);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background: var(--woody-bone); color: var(--woody-ink-2); font-family: var(--sans); font-size: 14px; line-height: 1.45; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+body::before { display: none; }
+.app { position: relative; max-width: 1140px; margin: 0 auto; padding: 32px 24px 80px; }
+
+/* Header */
+.hdr { margin-bottom: 32px; display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.hdr h1 { font-family: var(--sans); font-size: 36px; font-weight: 700; color: var(--woody-ink); letter-spacing: -0.01em; line-height: 1.1; }
+.hdr .tag { color: var(--woody-ink-4); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 6px; }
+.hdr-r { display: flex; gap: 8px; align-items: center; }
+
+/* Auto indicator */
+.auto-indicator { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 11px; font-weight: 500; letter-spacing: 0.04em; border: 1px solid var(--border); }
+.auto-indicator.running { background: rgba(74,143,122,0.08); color: var(--woody-success); border-color: rgba(74,143,122,0.25); }
+.auto-indicator.stopped { background: var(--woody-paper); color: var(--woody-ink-4); }
+.auto-indicator .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.auto-indicator.running .dot { background: var(--woody-success); animation: pulse 2s infinite; }
+.auto-indicator.stopped .dot { background: var(--woody-mute); }
+@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.3 } }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; background: var(--woody-paper); border-radius: 8px; padding: 4px; margin-bottom: 24px; border: 1px solid var(--border); }
+.tab { flex: 1; padding: 10px 12px; text-align: center; font-family: var(--sans); font-size: 12px; font-weight: 500; letter-spacing: 0.02em; color: var(--woody-ink-4); background: transparent; border: none; border-radius: 5px; cursor: pointer; transition: all 0.15s; }
+.tab:hover { color: var(--woody-ink-2); background: rgba(255,255,255,0.5); }
+.tab.active { background: var(--woody-white); color: var(--woody-ink); box-shadow: var(--shadow-1); }
+.tab .badge { display: inline-block; background: var(--woody-ink); color: var(--woody-bone); font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 999px; margin-left: 4px; }
+
+/* Panels */
+.pnl { display: none; animation: fadeIn 0.25s ease; }
+.pnl.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Forms */
+label { display: block; font-size: 11px; color: var(--woody-ink-3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; font-weight: 500; }
+select, input[type="text"], input[type="password"], input[type="number"], textarea { width: 100%; background: var(--woody-white); border: 1px solid var(--border); border-radius: 4px; color: var(--woody-ink-2); font-family: var(--sans); font-size: 14px; padding: 10px 12px; outline: none; transition: border-color 0.15s, box-shadow 0.15s; margin-bottom: 14px; }
+select:focus, input:focus, textarea:focus { border-color: var(--woody-ink); box-shadow: 0 0 0 3px rgba(35,31,32,0.08); }
+textarea { height: 180px; resize: vertical; line-height: 1.6; font-family: var(--mono); font-size: 13px; }
+.hint { font-size: 12px; color: var(--woody-ink-4); margin-top: -8px; margin-bottom: 14px; line-height: 1.5; }
+
+/* Rows & buttons */
+.row { display: flex; gap: 8px; align-items: flex-end; }
+.row .field { flex: 1; }
+.row select, .row input { margin-bottom: 0; }
+.btn { background: var(--woody-ink); color: var(--woody-bone); border: 1px solid var(--woody-ink); border-radius: 6px; padding: 11px 22px; font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.15s, transform 0.1s; white-space: nowrap; }
+.btn:hover { background: var(--woody-ink-2); }
+.btn:active { transform: translateY(0.5px); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-full { width: 100%; }
+.btn-s { background: var(--woody-white); color: var(--woody-ink-2); border: 1px solid var(--border); border-radius: 5px; padding: 8px 14px; font-family: var(--sans); font-size: 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.btn-s:hover { border-color: var(--woody-line); background: var(--woody-paper); }
+.btn-dng { color: var(--woody-error); border-color: rgba(163,27,0,0.3); }
+.btn-dng:hover { border-color: var(--woody-error); background: rgba(163,27,0,0.05); }
+.btn-add { background: var(--woody-paper); border: 1px dashed var(--woody-line); color: var(--woody-ink-2); padding: 10px 14px; border-radius: 5px; cursor: pointer; font-family: var(--sans); font-size: 12px; transition: all 0.15s; flex-shrink: 0; }
+.btn-add:hover { border-color: var(--woody-ink); background: var(--woody-white); }
+
+/* Result panels */
+.result { margin-top: 16px; padding: 14px 18px; border-radius: 6px; font-size: 13px; line-height: 1.6; display: none; animation: fadeIn 0.3s; border: 1px solid; }
+.result.ok { background: rgba(74,143,122,0.08); border-color: rgba(74,143,122,0.25); color: var(--woody-success); }
+.result.err { background: rgba(163,27,0,0.06); border-color: rgba(163,27,0,0.25); color: var(--woody-error); }
+.result.info { background: rgba(104,130,168,0.06); border-color: rgba(104,130,168,0.25); color: var(--woody-info); }
+
+/* Severity badges */
+.sev { padding: 3px 9px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; flex-shrink: 0; text-transform: uppercase; display: inline-block; }
+.sev-CRITICAL { background: rgba(163,27,0,0.08); color: var(--woody-error); }
+.sev-HIGH { background: rgba(184,135,90,0.12); color: var(--woody-warm); }
+.sev-MEDIUM { background: rgba(197,154,109,0.12); color: var(--woody-warm-2); }
+.sev-WATCH { background: rgba(104,130,168,0.10); color: var(--woody-info); }
+.sev-LOW { background: rgba(74,143,122,0.08); color: var(--woody-success); }
+
+/* Stats tiles */
+.stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.stat { flex: 1; min-width: 110px; background: var(--woody-white); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; }
+.stat .n { font-size: 24px; font-family: var(--sans); font-weight: 700; color: var(--woody-ink); line-height: 1.1; }
+.stat .l { font-size: 11px; color: var(--woody-ink-4); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
+
+/* Tables */
+.tbl-ctrl { display: flex; gap: 8px; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.tbl-ctrl .left { display: flex; gap: 8px; flex-wrap: wrap; }
+.fsel { width: auto; margin: 0; padding: 7px 10px; font-size: 12px; min-width: 130px; }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; max-height: 70vh; overflow-y: auto; background: var(--woody-white); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { background: var(--woody-paper); color: var(--woody-ink-3); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 2; }
+thead th:hover { color: var(--woody-ink); background: var(--woody-line-warm); }
+thead th .sa { margin-left: 3px; opacity: 0.4; }
+thead th.sorted .sa { opacity: 1; color: var(--woody-ink); }
+tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--woody-ink-2); vertical-align: middle; }
+tbody tr:hover { background: var(--woody-bone); }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.vn { color: var(--woody-error); }
+.vp { color: var(--woody-success); }
+.recount-flag { display: inline-block; background: rgba(163,27,0,0.10); color: var(--woody-error); font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 3px; letter-spacing: 0.04em; }
+.no-rc { color: var(--woody-mute); font-size: 11px; }
+
+/* Issue cards */
+.issue-cards { display: grid; gap: 6px; margin-top: 10px; }
+.ic { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--woody-white); border: 1px solid var(--border); border-radius: 6px; }
+.ic .nm { font-size: 13px; color: var(--woody-ink-2); }
+.ic .mt { font-size: 11px; color: var(--woody-ink-4); margin-top: 2px; }
+
+/* Settings groups */
+.sg { background: var(--woody-white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+.sg h3 { font-family: var(--sans); font-size: 18px; font-weight: 700; color: var(--woody-ink); margin-bottom: 12px; }
+.lt { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; min-height: 28px; }
+.ltg { display: inline-flex; align-items: center; gap: 6px; background: var(--woody-paper); border: 1px solid var(--border); border-radius: 999px; padding: 4px 11px; font-size: 12px; color: var(--woody-ink-2); }
+.ltg .x { cursor: pointer; color: var(--woody-ink-4); transition: color 0.15s; }
+.ltg .x:hover { color: var(--woody-error); }
+.add-loc { display: none; margin-bottom: 14px; padding: 14px; background: var(--woody-paper); border: 1px solid var(--border); border-radius: 6px; }
+.add-loc.open { display: block; }
+
+/* API explorer log */
+.api-log { background: var(--woody-paper); border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin-top: 14px; max-height: 300px; overflow-y: auto; font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; color: var(--woody-ink-3); font-family: var(--mono); }
+.api-log .req { color: var(--woody-ink); }
+.api-log .ok { color: var(--woody-success); }
+.api-log .fail { color: var(--woody-error); }
+.api-log .info { color: var(--woody-info); }
+
+/* Empty state */
+.empty { text-align: center; padding: 48px 24px; color: var(--woody-ink-4); font-size: 13px; line-height: 1.7; }
+.empty .ico { font-size: 32px; margin-bottom: 12px; display: block; opacity: 0.5; }
+
+/* Spinner & toast */
+.spin { display: inline-block; animation: sp .7s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--woody-ink); border: 1px solid var(--woody-ink); color: var(--woody-bone); padding: 12px 20px; border-radius: 6px; font-size: 13px; z-index: 999; animation: su .3s ease, fo .3s ease 2.5s forwards; box-shadow: var(--shadow-2); }
+@keyframes su { from { transform: translateY(20px); opacity: 0; } }
+@keyframes fo { to { opacity: 0; transform: translateY(-10px); } }
+
+/* Image drop zone */
+#imgDrop { background: var(--woody-paper); }
+#imgDrop.dragover { border-color: var(--woody-ink); background: rgba(35,31,32,0.04); }
+.img-thumb { position: relative; width: 64px; height: 64px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
+.img-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.img-thumb .rm { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(35,31,32,0.7); color: var(--woody-bone); border: none; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .hdr h1 { font-size: 28px; }
+  .row, .tbl-ctrl { flex-direction: column; }
+  .stats { flex-direction: column; }
+  .fsel { width: 100%; }
+  .tbl-ctrl .left { width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hdr">
+    <div>
+      <h1>Inventory Workflow</h1>
+      <p class="tag">H.Wood Group &middot; Automated Variance Tracker</p>
+    </div>
+    <div class="hdr-r">
+      <div class="auto-indicator stopped" id="autoInd">
+        <span class="dot"></span>
+        <span id="autoLabel">Auto: Off</span>
+      </div>
+      <button class="btn-s" onclick="switchTab('settings')">&#9881; Config</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('parse')">Parse</button>
+    <button class="tab" onclick="switchTab('initiate')" title="Live issues — clear before the physical count">⚡ Initiate <span class="badge" id="iBadge" style="background:#dc2626">0</span></button>
+    <button class="tab" onclick="switchTab('data')">Recount <span class="badge" id="cBadge">0</span></button>
+    <button class="tab" onclick="switchTab('craftable')">Craftable</button>
+    <button class="tab" onclick="switchTab('inventory')">Inventory</button>
+    <button class="tab" onclick="switchTab('api')">API Explorer</button>
+    <button class="tab" onclick="switchTab('settings')">Settings</button>
+  </div>
+
+  <!-- ═══ PARSE ═══ -->
+  <div id="pnl-parse" class="pnl active">
+    <div class="row" style="margin-bottom:14px">
+      <div class="field"><label>Venue</label><select id="locSel"><option value="">— Select venue —</option></select></div>
+      <div class="field" style="max-width:200px">
+        <label>Count Phase</label>
+        <select id="countPhase" onchange="onCountPhaseChange()" style="margin:0">
+          <option value="1">Count 1 — Initial</option>
+          <option value="2">Count 2 — Recount</option>
+        </select>
+      </div>
+      <button class="btn-add" onclick="toggleAdd()">+ New</button>
+    </div>
+    <div id="countHint" class="hint" style="margin-top:-8px;margin-bottom:12px;padding:10px 14px;background:var(--woody-paper);border-radius:6px;border:1px solid var(--border)">
+      <strong style="color:var(--accent)">Count 1:</strong> Pull Slack messages → Parse issues → Import Craftable AVT → Generate recount list
+    </div>
+    <div class="add-loc" id="addBox"><div class="row"><input type="text" id="newLN" placeholder="e.g. Delilah - Vegas" style="margin:0"><button class="btn-s" onclick="addLoc()">Add</button><button class="btn-s" onclick="toggleAdd()">Cancel</button></div></div>
+
+    <button class="btn" id="slackPullBtn" onclick="pullFromSlack()" style="width:100%;margin-bottom:10px;background:#4A154B;border-color:#4A154B;color:#fff">
+      <span style="font-size:14px">⚡</span> Pull from Slack
+    </button>
+    <p class="hint" id="slackPullStatus" style="display:none;margin-top:-6px;margin-bottom:10px"></p>
+
+    <div style="text-align:center;color:var(--text-muted);font-size:10px;margin:8px 0;letter-spacing:1px">— OR PASTE MANUALLY —</div>
+
+    <label>Paste Slack Messages</label>
+    <textarea id="msgIn" placeholder="Paste inventory messages...
+
+John: 3 bottles of Patrón Silver missing from back shelf
+Maria: Grey Goose label damaged, can't scan
+Tom: Aperol cracked — pulled
+Sarah: 2x Hendrick's Gin unaccounted, walk-in"></textarea>
+    <p class="hint">AI extracts products, quantities, issue types, locations from text.</p>
+
+    <label>Bottle / Label Images</label>
+    <div id="imgDrop" style="border:2px dashed var(--border);border-radius:var(--radius);padding:24px;text-align:center;color:var(--text-muted);font-size:11px;cursor:pointer;transition:border-color 0.2s,background 0.2s;margin-bottom:14px;" onclick="document.getElementById('imgFileIn').click()">
+      Drop images here, paste from clipboard (Ctrl+V), or click to browse<br>
+      <span style="font-size:10px;color:var(--text-muted)">Supports JPG, PNG, WEBP — photos of bottles, labels, barcodes</span>
+      <input type="file" id="imgFileIn" accept="image/*" multiple style="display:none" onchange="addImageFiles(event)">
+    </div>
+    <div id="imgPreviews" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
+    <p class="hint" id="imgCount" style="display:none;margin-top:-8px;">0 images added — AI will read bottle labels and extract product names</p>
+
+    <button class="btn btn-full" id="parseBtn" onclick="handleParse()">Parse & Add Issues</button>
+    <div class="result" id="parseRes"></div>
+  </div>
+
+  <!-- ═══ INITIATE — live issues to clear before the physical count ═══ -->
+  <div id="pnl-initiate" class="pnl">
+    <div class="stats" id="iStatsBar"></div>
+    <div class="tbl-ctrl">
+      <div class="left">
+        <select class="fsel" id="fIVen" onchange="renderInitiate()"><option value="">All Venues</option></select>
+        <span class="hint" style="font-size:10px;margin-left:8px;align-self:center">Clear these before starting the physical count. State persists across reloads.</span>
+      </div>
+    </div>
+    <div id="initiateTbl"></div>
+  </div>
+
+  <!-- ═══ RECOUNT ═══ -->
+  <div id="pnl-data" class="pnl">
+    <div class="stats" id="statsBar"></div>
+    <div class="tbl-ctrl">
+      <div class="left">
+        <select class="fsel" id="fVen" onchange="renderData()"><option value="">All Venues</option></select>
+        <select class="fsel" id="fSev" onchange="renderData()">
+          <option value="">All Severity</option>
+          <option value="CRITICAL">Critical</option><option value="HIGH">High</option>
+          <option value="MEDIUM">Medium</option><option value="WATCH">Watch</option><option value="LOW">Low</option>
+        </select>
+        <select class="fsel" id="fRc" onchange="renderData()">
+          <option value="">All Items</option><option value="yes">Recount Needed</option><option value="no">No Recount</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn-s" onclick="exportCSV('recount')">&#8595; Recount CSV</button>
+        <button class="btn-s" onclick="exportCSV('full')">&#8595; Full CSV</button>
+        <button class="btn-s" onclick="exportCounterRefresh()" title="Overlays this-week variance on last-week flagged items. Requires two imports.">&#8595; Counter Refresh</button>
+        <button class="btn-s" onclick="document.getElementById('priorWeekFile').click()" title="Load last week's inventory_full_Week_*.csv to populate Prior Variance and WoW Tag columns this week.">&#8593; Prior Week CSV</button>
+        <input type="file" id="priorWeekFile" accept=".csv" style="display:none" onchange="importPriorWeekCSV(event)">
+        <button class="btn-s btn-dng" onclick="clearAll()">Clear</button>
+      </div>
+    </div>
+    <div id="dataTbl"></div>
+  </div>
+
+  <!-- ═══ CRAFTABLE ═══ -->
+  <div id="pnl-craftable" class="pnl">
+    <div class="sg">
+      <h3>Craftable — Actual vs Theoretical Variance</h3>
+      <p class="hint" style="margin:0 0 10px">Pulls AVT variance data from Craftable for the current period. Store is auto-detected from your API, or select manually.</p>
+      <div class="row" style="margin-bottom:10px">
+        <div class="field"><label>Store</label><select id="cVen" style="margin:0"><option value="">Auto-detect (all stores)</option></select></div>
+        <div class="field"><label>Period</label>
+          <select id="cPeriod" style="margin:0">
+            <option value="current">Current Period</option>
+            <option value="last">Last Period</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-bottom:10px">
+        <div class="field"><label>Min Variance ($)</label><input type="number" id="cMin" value="50" style="margin:0"></div>
+        <div class="field"><label>Category Filter</label>
+          <select id="cCat" style="margin:0">
+            <option value="">All Categories</option>
+            <option value="5310">5310 - Liquor Cost</option>
+            <option value="5315">5315 - Bar Consumables</option>
+            <option value="5320">5320 - Wine Cost</option>
+            <option value="5325">5325 - Beer Cost</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn" id="craftBotBtn" onclick="pullCraftableBot()" style="background:#2d6a4f;border-color:#2d6a4f">🤖 Auto-Pull from Craftable</button>
+        <button class="btn" onclick="pullCraftable()">Pull Current Variance</button>
+        <button class="btn-s" onclick="document.getElementById('cFile').click()">Import Craftable Export</button>
+        <input type="file" id="cFile" accept=".csv,.xlsx,.xls" style="display:none" onchange="importCSV(event)">
+      </div>
+      <p class="hint" id="craftBotStatus" style="display:none;margin-top:8px"></p>
+      <div id="cPeriodInfo" style="margin-top:10px;font-size:10px;color:var(--dim);display:none"></div>
+    </div>
+    <div class="result" id="cRes"></div>
+    <div id="xrefTbl" style="margin-top:16px"></div>
+  </div>
+
+  <!-- ═══ INVENTORY REFERENCE ═══ -->
+  <div id="pnl-inventory" class="pnl">
+    <div class="sg">
+      <h3>Master Inventory List</h3>
+      <p class="hint" style="margin:0 0 10px">Upload your full product list from Craftable. The AI uses this to recognize product names during parsing — especially items with unusual names like "Just One Drink" or "Still Gin".</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn" onclick="document.getElementById('invFile').click()">Upload Inventory File</button>
+        <button class="btn-s" onclick="clearInventory()">Clear List</button>
+        <input type="file" id="invFile" accept=".csv,.xlsx,.xls" style="display:none" onchange="importInventory(event)">
+      </div>
+      <div class="result" id="invRes" style="display:none"></div>
+      <div id="invStats" style="margin-bottom:12px"></div>
+      <div style="margin-bottom:8px">
+        <input type="text" id="invSearch" placeholder="Search products..." oninput="renderInventory()" style="margin:0;max-width:400px">
+      </div>
+      <div id="invTbl"></div>
+    </div>
+  </div>
+
+  <!-- ═══ API EXPLORER ═══ -->
+  <div id="pnl-api" class="pnl">
+    <div class="sg">
+      <h3>Craftable API Explorer</h3>
+      <p class="hint" style="margin:0 0 10px">Discovers available endpoints from the Swagger spec. Run this first to confirm your API setup works.</p>
+      <div class="row" style="margin-bottom:10px">
+        <div class="field"><label>API Base URL</label><input type="text" id="apiBase" style="margin:0" value="https://api.craftable.com/v1"></div>
+      </div>
+      <div class="row" style="margin-bottom:10px">
+        <div class="field"><label>API Key</label><input type="password" id="apiKeyExplorer" style="margin:0" placeholder="PytYKiR0Bd..."></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="discoverAPI()">1. Discover Endpoints</button>
+        <button class="btn-s" onclick="testAuth()">2. Test Auth</button>
+        <button class="btn-s" onclick="listLocations()">3. List Locations</button>
+        <button class="btn-s" onclick="testVariance()">4. Test Variance</button>
+      </div>
+    </div>
+    <div class="api-log" id="apiLog">Ready. Click "Discover Endpoints" to scan the Craftable API.\n\nThis will:\n  1. Fetch the Swagger/OpenAPI spec\n  2. List all available endpoints\n  3. Identify the correct variance, location, and product endpoints\n  4. Save the configuration for automated pulls</div>
+  </div>
+
+  <!-- ═══ SETTINGS ═══ -->
+  <div id="pnl-settings" class="pnl">
+    <div class="sg">
+      <h3>Craftable API</h3>
+      <p class="hint" style="margin:0 0 10px">From <a href="https://api.craftable.com/v1/swagger-ui/index.html" target="_blank" style="color:var(--accent)">api.craftable.com/v1/swagger-ui</a></p>
+      <label>API Base URL</label>
+      <input type="text" id="sApiBase" value="https://api.craftable.com/v1">
+      <label>API Key</label>
+      <input type="password" id="sApiKey" placeholder="PytYKiR0BdqOnhCIy_6sG0jhXO3FFBAPt_o82Bx">
+      <p class="hint">Your key goes here. Stored only in your browser's localStorage.</p>
+      <label>Auth Method</label>
+      <select id="sAuthMethod">
+        <option value="bearer">Authorization: Bearer &lt;key&gt;</option>
+        <option value="xapi">X-API-Key: &lt;key&gt;</option>
+        <option value="query">?api_key=&lt;key&gt; (query param)</option>
+      </select>
+      <button class="btn-s" onclick="saveAPI()">Save API Config</button>
+    </div>
+
+    <div class="sg">
+      <h3>GitHub Token (AI Parsing)</h3>
+      <p class="hint" style="margin:0 0 10px">Uses GPT-4o-mini via <a href="https://github.com/marketplace/models" target="_blank" style="color:var(--accent)">GitHub Models</a>. Create a PAT at <a href="https://github.com/settings/tokens" target="_blank" style="color:var(--accent)">github.com/settings/tokens</a> — no special scopes needed.</p>
+      <input type="password" id="sGithubPat" placeholder="ghp_xxxxxxxxxxxx...">
+      <button class="btn-s" onclick="saveGithubPat()">Save</button>
+    </div>
+
+    <div class="sg">
+      <h3>Slack Integration</h3>
+      <p class="hint" style="margin:0 0 10px">Pull messages + images directly from Slack channels. Uses a User OAuth Token from your Slack App.</p>
+      <input type="password" id="sSlackToken" placeholder="xoxp-xxxxxxxxxxxx...">
+      <button class="btn-s" onclick="saveSlackToken()">Save</button>
+      <p class="hint" style="margin:6px 0 0;font-size:10px" id="slackStatus"></p>
+    </div>
+
+    <div class="sg">
+      <h3>Automation</h3>
+      <p class="hint" style="margin:0 0 10px">Auto-pull from Craftable on a schedule. Runs while this page is open.</p>
+      <div class="row" style="margin-bottom:10px">
+        <div class="field"><label>Pull Interval</label>
+          <select id="sInterval" style="margin:0">
+            <option value="0">Disabled</option>
+            <option value="15">Every 15 minutes</option>
+            <option value="30" selected>Every 30 minutes</option>
+            <option value="60">Every hour</option>
+            <option value="120">Every 2 hours</option>
+          </select>
+        </div>
+        <div class="field"><label>Min Variance ($)</label><input type="number" id="sMinVar" value="50" style="margin:0"></div>
+      </div>
+      <button class="btn-s" onclick="saveAuto()">Save & Start</button>
+    </div>
+
+    <div class="sg">
+      <h3>Venues</h3>
+      <div class="lt" id="locTags"></div>
+      <div class="row"><div class="field"><input type="text" id="sNewLoc" placeholder="Add venue..." style="margin:0"></div></div>
+      <button class="btn-s" onclick="addLocS()" style="margin-top:6px">+ Add</button>
+    </div>
+
+    <div class="sg">
+      <h3>Recount Thresholds</h3>
+      <p class="hint" style="margin:0 0 10px">An item is flagged if ANY of these is exceeded. Liquor and Wine dollar thresholds are independent.</p>
+      <div class="row">
+        <div class="field"><label>Liquor Min Variance ($)</label><input type="number" id="sThrLiquor" value="50" style="margin:0"></div>
+        <div class="field"><label>Wine Min Variance ($)</label><input type="number" id="sThrWine" value="200" style="margin:0"></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="field"><label>Min Bottle Variance (qty units)</label><input type="number" id="sThrBottle" value="1" style="margin:0"></div>
+        <div class="field"><label>Min Qty Variance (new dimension)</label><input type="number" id="sThrQtyUnits" value="1" style="margin:0"></div>
+        <div class="field"><label>Min Variance % (new dimension)</label><input type="number" id="sThrPct" value="10" style="margin:0"></div>
+      </div>
+      <button class="btn-s" onclick="saveThr()" style="margin-top:6px">Save</button>
+    </div>
+
+    <div class="sg">
+      <h3>Name Aliases (typo corrections)</h3>
+      <p class="hint" style="margin:0 0 10px">One per line, format <code>typo=canonical</code>. Applied during name normalization before matching. Built-in defaults include <code>imperal=imperial</code>, <code>vinyard=vineyard</code>, <code>chardonay=chardonnay</code> — override here to add more. Hot-reloads on Save (no redeploy).</p>
+      <textarea id="sAliases" rows="6" style="width:100%;font-family:monospace;font-size:11px;padding:6px 8px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:4px;color:var(--text);resize:vertical" placeholder="caymus=caymus
+ketel=ketel one
+imperel=imperial"></textarea>
+      <button class="btn-s" onclick="saveAliases()" style="margin-top:6px">Save Aliases</button>
+      <span class="hint" style="font-size:10px;margin-left:8px" id="aliasCount"></span>
+      <div style="margin-top:12px"><h4 style="font-size:12px;margin:0 0 4px;color:var(--text-muted)">Learned from Initiate tab</h4>
+        <p class="hint" style="margin:0 0 6px;font-size:10px">Mappings saved by counters when resolving REVIEW items. Cleared via Clear Learned.</p>
+        <div id="learnedList" style="font-size:10px;color:var(--text-muted);max-height:140px;overflow:auto;padding:4px 6px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:4px"></div>
+        <button class="btn-s" onclick="clearLearnedAliases()" style="margin-top:6px">Clear Learned</button>
+      </div>
+    </div>
+
+    <div class="sg">
+      <h3>Discovered Endpoints</h3>
+      <p class="hint" style="margin:0 0 10px">Auto-populated after API discovery. Override if needed.</p>
+      <label>Locations Endpoint</label><input type="text" id="sEpLoc" placeholder="/locations">
+      <label>Variance Endpoint</label><input type="text" id="sEpVar" placeholder="/reports/avt-summary or /variance">
+      <label>Products Endpoint</label><input type="text" id="sEpProd" placeholder="/products">
+      <button class="btn-s" onclick="saveEndpoints()">Save Endpoints</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+const SK='hw_inv_v3';
+// Canonical venue list — any inbound spelling is mapped to one of these
+const DV=['Bird Street','Delilah LA','Delilah Miami','The Keys','The Nice Guy','Poppy','h.wood Catering'];
+// Alias → canonical. Keys are lowercased + punctuation-stripped via normalize().
+const VENUE_ALIASES={
+  'birdstreetsclub':'Bird Street','birdstreets':'Bird Street','birdstreet':'Bird Street','birdstreetclub':'Bird Street',
+  'delilahla':'Delilah LA','delilah':'Delilah LA','deliliahla':'Delilah LA','delilahlosangeles':'Delilah LA',
+  'delilahmiami':'Delilah Miami','deliliahmiami':'Delilah Miami',
+  'keys':'The Keys','keysclub':'The Keys','thekeys':'The Keys','thekeysclub':'The Keys',
+  'niceguy':'The Nice Guy','theniceguy':'The Nice Guy',
+  'poppy':'Poppy',
+  'hwoodcatering':'h.wood Catering','hwoodcater':'h.wood Catering','catering':'h.wood Catering',
+};
+function normalizeVenue(name){
+  if(!name)return '';
+  const key=String(name).toLowerCase().replace(/[^a-z0-9]/g,'');
+  if(VENUE_ALIASES[key])return VENUE_ALIASES[key];
+  // Fuzzy fallback — check each canonical against the normalized key
+  for(const canon of DV){
+    const ck=canon.toLowerCase().replace(/[^a-z0-9]/g,'');
+    if(ck===key||key.includes(ck)||ck.includes(key))return canon;
+  }
+  return String(name).trim(); // preserve unknown venue as-is so it surfaces in Settings
+}
+// R3.7 — Live-platform rule: no numeric data from last week survives a session.
+// Only prior-week NAMES (in S.priorWeek) persist so we can flag recurring items.
+// Called at init, after ld(), before any render. Also invoked before each AVT import
+// so the incoming data always starts from a clean slate.
+function wipeStaleVariance(){
+  if(!S||!Array.isArray(S.items)){S.items=[];return}
+  // Drop last week's Craftable-only rows entirely — they are AVT-origin data with
+  // no independent existence; they'll be regenerated on the next crossRef against
+  // fresh S.craftData.
+  const slackOnly=S.items.filter(i=>i.issue_type!=='Craftable Variance');
+  // Null every numeric value that came from a prior AVT match. Keep item identity
+  // (venue, item_name, sku, item_id, issue_type, notes, location) — those are the
+  // counter's observations, not AVT data.
+  for(const i of slackOnly){
+    i.variance_dollars=null;i.variance_pct=null;i.variance_qty=null;
+    i.actual_amount=null;i.theo_amount=null;i.cu_price=null;
+    i.depletions=null;i.waste=null;
+    i.craftable_match='';i.craftable_status='PENDING — Awaiting AVT';
+    i.match_score=null;i.match_tier='';i.match_flag='';
+    i.variance_source='null:awaiting_avt';
+    i.wow_tag='';i.prior_variance_dollars=null;
+    i.severity='LOW';i.recount=false;i.resolved=false;
+  }
+  S.items=slackOnly;
+  // S.craftData is this-week AVT. Wipe it on load so a stale restore can't serve
+  // as the "current" source of truth. User must re-import to see any variance.
+  S.craftData=[];
+  // S.priorWeek stays — it holds last week's items and is the only cross-week link.
+  // S.learnedAliases, S.initiate, S.customTypoAliases all stay.
+  sv();
+}
+
+let S=ld();
+function ld(){
+  try{
+    const r=localStorage.getItem(SK);
+    if(r){
+      const p=JSON.parse(r);
+      if(!p.slackToken)p.slackToken='';
+      if(!p.threshLiquor)p.threshLiquor=50;
+      if(!p.threshWine)p.threshWine=200;
+      if(!p.threshBottle)p.threshBottle=1;
+      if(!p.threshPct)p.threshPct=10;
+      if(!p.threshQtyUnits)p.threshQtyUnits=1;
+      if(!p.initiate)p.initiate={};
+      if(!p.priorWeek)p.priorWeek=null;
+      if(!p.customTypoAliases)p.customTypoAliases={};
+      if(!p.learnedAliases)p.learnedAliases={};
+      // Dedupe venues under canonical spelling
+      if(Array.isArray(p.venues)){
+        const seen=new Set();p.venues=p.venues.map(v=>normalizeVenue(v)).filter(v=>{if(seen.has(v))return false;seen.add(v);return true});
+      }
+      // Normalize venue field on existing items (one-time migration)
+      if(Array.isArray(p.items))p.items.forEach(i=>{i.venue=normalizeVenue(i.venue)});
+      if(Array.isArray(p.craftData))p.craftData.forEach(i=>{i.venue=normalizeVenue(i.venue)});
+      return p;
+    }
+  }catch(e){}
+  return{apiBase:'https://api.craftable.com/v1',apiKey:'',authMethod:'bearer',githubPat:'',slackToken:'',venues:[...DV],items:[],craftData:[],threshLiquor:50,threshWine:200,threshBottle:1,threshPct:10,threshQtyUnits:1,threshD:100,threshW:3,interval:30,minVar:50,endpoints:{locations:'',variance:'',products:''},lastPull:null,avtGeneratedAt:null,initiate:{},priorWeek:null,customTypoAliases:{},learnedAliases:{}};
+}
+function sv(){try{localStorage.setItem(SK,JSON.stringify(S))}catch(e){}}
+
+// Stable item-ID: prefer AVT ID, fall back to canonical venue + normalized name.
+// This is the join key across imports (Bug 2 fix + WoW reconciliation).
+function stableItemId(rec){
+  const id=(rec.sku||rec.id||'').toString().trim();
+  if(id)return 'id:'+id;
+  return 'nm:'+normalizeVenue(rec.venue||'').toLowerCase().replace(/\s+/g,'')+'|'+String(rec.item_name||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+
+// ═══════════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════════
+const PANELS=['parse','initiate','data','craftable','inventory','api','settings'];
+function switchTab(n){
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.toggle('active',PANELS[i]===n);const el=document.getElementById('pnl-'+PANELS[i]);if(el)el.classList.toggle('active',PANELS[i]===n)});
+  if(n==='data')renderData();if(n==='initiate')renderInitiate();if(n==='craftable')renderXRef();if(n==='inventory')renderInventory();if(n==='settings')renderSettings();
+}
+
+// ═══════════════════════════════════════════════════
+//  VENUES
+// ═══════════════════════════════════════════════════
+function renderVS(){['locSel','fVen','cVen','fIVen'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const c=el.value,f=el.options[0].text;el.innerHTML=`<option value="">${f}</option>`;S.venues.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o)});if(c&&S.venues.includes(c))el.value=c})}
+function toggleAdd(){document.getElementById('addBox').classList.toggle('open');document.getElementById('newLN').focus()}
+function addLoc(){const n=document.getElementById('newLN').value.trim();if(!n)return;if(S.venues.some(v=>v.toLowerCase()===n.toLowerCase())){toast('Exists');return}S.venues.push(n);sv();renderVS();document.getElementById('locSel').value=n;document.getElementById('addBox').classList.remove('open');document.getElementById('newLN').value='';toast('Added: '+n)}
+function removeLoc(nm){S.venues=S.venues.filter(v=>v!==nm);sv();renderVS();renderSettings()}
+function addLocS(){const n=document.getElementById('sNewLoc').value.trim();if(!n)return;if(S.venues.some(v=>v.toLowerCase()===n.toLowerCase())){toast('Exists');return}S.venues.push(n);sv();document.getElementById('sNewLoc').value='';renderVS();renderSettings();toast('Added: '+n)}
+
+// ═══════════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════════
+function renderSettings(){
+  document.getElementById('sApiBase').value=S.apiBase;document.getElementById('sApiKey').value=S.apiKey;
+  document.getElementById('sAuthMethod').value=S.authMethod;document.getElementById('sGithubPat').value=S.githubPat||'';
+  document.getElementById('sSlackToken').value=S.slackToken||'';
+  document.getElementById('apiKeyExplorer').value=S.apiKey;document.getElementById('apiBase').value=S.apiBase;
+  document.getElementById('sInterval').value=S.interval;document.getElementById('sMinVar').value=S.minVar;
+  document.getElementById('sThrLiquor').value=S.threshLiquor||50;document.getElementById('sThrWine').value=S.threshWine||200;document.getElementById('sThrBottle').value=S.threshBottle||1;
+  const pEl=document.getElementById('sThrPct');if(pEl)pEl.value=S.threshPct||10;
+  const qEl=document.getElementById('sThrQtyUnits');if(qEl)qEl.value=S.threshQtyUnits||1;
+  document.getElementById('sEpLoc').value=S.endpoints.locations||'';
+  document.getElementById('sEpVar').value=S.endpoints.variance||'';
+  document.getElementById('sEpProd').value=S.endpoints.products||'';
+  const w=document.getElementById('locTags');w.innerHTML='';
+  S.venues.forEach(v=>{const t=document.createElement('span');t.className='ltg';t.innerHTML=`${esc(v)} <span class="x" onclick="removeLoc('${v.replace(/'/g,"\\'")}')">&times;</span>`;w.appendChild(t)});
+  const aEl=document.getElementById('sAliases');
+  if(aEl){aEl.value=Object.entries(S.customTypoAliases||{}).map(([k,v])=>`${k}=${v}`).join('\n')}
+  const ac=document.getElementById('aliasCount');
+  if(ac){const n=Object.keys(S.customTypoAliases||{}).length;ac.textContent=n?`${n} custom alias(es) · ${Object.keys(DEFAULT_TYPO_ALIASES).length} built-in`:`${Object.keys(DEFAULT_TYPO_ALIASES).length} built-in aliases active`}
+  renderLearnedAliases();
+}
+function saveAPI(){S.apiBase=document.getElementById('sApiBase').value.trim().replace(/\/$/,'');S.apiKey=document.getElementById('sApiKey').value.trim();S.authMethod=document.getElementById('sAuthMethod').value;sv();toast('API config saved')}
+function saveGithubPat(){S.githubPat=document.getElementById('sGithubPat').value.trim();sv();toast('GitHub token saved')}
+function saveSlackToken(){S.slackToken=document.getElementById('sSlackToken').value.trim();sv();toast('Slack token saved')}
+function saveAuto(){S.interval=parseInt(document.getElementById('sInterval').value)||0;S.minVar=parseFloat(document.getElementById('sMinVar').value)||50;sv();setupAutoPull();toast('Automation saved')}
+function saveThr(){
+  S.threshLiquor=parseFloat(document.getElementById('sThrLiquor').value)||50;
+  S.threshWine=parseFloat(document.getElementById('sThrWine').value)||200;
+  S.threshBottle=parseFloat(document.getElementById('sThrBottle').value)||1;
+  const pEl=document.getElementById('sThrPct');if(pEl)S.threshPct=parseFloat(pEl.value)||10;
+  const qEl=document.getElementById('sThrQtyUnits');if(qEl)S.threshQtyUnits=parseFloat(qEl.value)||1;
+  sv();
+  // Re-score so the new thresholds take effect immediately
+  S.items.forEach(i=>{i.severity=scoreSev(i);i.recount=i.resolved?false:needsRC(i)});
+  sv();renderData();updateBadge();
+  toast('Thresholds saved · re-scored '+S.items.length+' items');
+}
+function saveEndpoints(){S.endpoints.locations=document.getElementById('sEpLoc').value.trim();S.endpoints.variance=document.getElementById('sEpVar').value.trim();S.endpoints.products=document.getElementById('sEpProd').value.trim();sv();toast('Endpoints saved')}
+function saveAliases(){
+  const raw=document.getElementById('sAliases').value.split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('#'));
+  const map={};
+  for(const line of raw){
+    const m=line.match(/^([^=]+)=(.+)$/);
+    if(m){map[m[1].trim().toLowerCase()]=m[2].trim().toLowerCase()}
+  }
+  S.customTypoAliases=map;sv();
+  crossRef();renderData();renderInitiate();updateBadge();
+  toast(`Saved ${Object.keys(map).length} alias(es). Re-matched ${S.items.length} items.`);
+}
+function clearLearnedAliases(){
+  if(!confirm('Clear all learned aliases? Counters will need to re-map any reviewed items.'))return;
+  S.learnedAliases={};sv();crossRef();renderInitiate();renderData();updateBadge();toast('Learned aliases cleared');
+}
+function renderLearnedAliases(){
+  const el=document.getElementById('learnedList');if(!el)return;
+  const la=S.learnedAliases||{};
+  const keys=Object.keys(la).sort();
+  if(!keys.length){el.innerHTML='<em>None yet.</em>';return}
+  el.innerHTML=keys.map(k=>`<div>${esc(k)} → ${esc(la[k])}</div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════
+//  SLACK INTEGRATION — Pull messages + images
+// ═══════════════════════════════════════════════════
+const SLACK_PROXY='https://slack-proxy.apurandare.workers.dev';
+// Keyed on canonical venue name (see DV / normalizeVenue).
+const VENUE_CHANNELS={
+  'Bird Street':'issues-birdstreetsclub',
+  'Delilah LA':'issues-delilah-la',
+  'Delilah Miami':'issues-delilah-miami',
+  'The Keys':'issues-keysclub',
+  'Poppy':'issues-poppy',
+  'The Nice Guy':'issues-theniceguy',
+  'h.wood Catering':'issues-hwood-catering',
+};
+function slackChannelFor(venue){
+  const canon=normalizeVenue(venue);
+  return VENUE_CHANNELS[canon]||null;
+}
+
+async function slackAPI(method,params={}){
+  const qs=Object.entries(params).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&');
+  const url=`${SLACK_PROXY}/${method}${qs?'?'+qs:''}`;
+  const res=await fetch(url,{headers:{'Authorization':'Bearer '+S.slackToken}});
+  if(!res.ok){const t=await res.text();throw new Error(`Slack ${res.status}: ${t.slice(0,200)}`)}
+  const data=await res.json();
+  if(!data.ok)throw new Error(`Slack error: ${data.error}`);
+  return data;
+}
+
+async function pullFromSlack(){
+  const venue=document.getElementById('locSel').value;
+  const btn=document.getElementById('slackPullBtn');
+  const status=document.getElementById('slackPullStatus');
+
+  if(!venue){status.style.display='block';status.textContent='Select a venue first.';status.style.color='var(--error)';return}
+  if(!S.slackToken){status.style.display='block';status.textContent='Add your Slack token in Settings.';status.style.color='var(--error)';return}
+
+  const channelName=slackChannelFor(venue);
+  if(!channelName){status.style.display='block';status.textContent=`No Slack channel mapped for "${venue}". Add mapping in code.`;status.style.color='var(--error)';return}
+
+  btn.disabled=true;
+  status.style.display='block';
+  status.style.color='var(--accent)';
+  status.textContent='Finding channel...';
+
+  try{
+    // Step 1: Find channel ID
+    let channelId=null;
+    for(const type of ['private_channel','public_channel']){
+      status.textContent=`Searching ${type}s for #${channelName}...`;
+      let cursor='';
+      for(let page=0;page<5;page++){
+        const params={types:type,limit:'200'};
+        if(cursor)params.cursor=cursor;
+        const data=await slackAPI('conversations.list',params);
+        const ch=data.channels.find(c=>c.name===channelName);
+        if(ch){channelId=ch.id;break}
+        cursor=data.response_metadata?.next_cursor;
+        if(!cursor)break;
+      }
+      if(channelId)break;
+    }
+
+    if(!channelId){
+      status.textContent=`Channel #${channelName} not found. Make sure you have access.`;
+      status.style.color='var(--error)';
+      return;
+    }
+
+    status.textContent=`Found #${channelName} (${channelId}). Pulling today's messages...`;
+
+    // Step 2: Pull messages from today (last 24 hours)
+    const now=Math.floor(Date.now()/1000);
+    const oldest=now-172800; // 7 days ago (covers full week between counts)
+    let allMessages=[];
+    let cursor='';
+    for(let page=0;page<10;page++){
+      const params={channel:channelId,oldest:String(oldest),latest:String(now),limit:'200'};
+      if(cursor)params.cursor=cursor;
+      const data=await slackAPI('conversations.history',params);
+      allMessages.push(...(data.messages||[]));
+      cursor=data.response_metadata?.next_cursor;
+      if(!cursor||!data.has_more)break;
+    }
+
+    status.textContent=`Fetched ${allMessages.length} messages. Extracting text + images...`;
+
+    // Step 3: Extract text and image files
+    let textParts=[];
+    let imageFiles=[];
+
+    for(const msg of allMessages.reverse()){
+      // Get username
+      const user=msg.user?msg.user.slice(0,8):'';
+      const text=(msg.text||'').replace(/<[^>]+>/g,'').trim();
+      if(text)textParts.push(text);
+
+      // Collect image files
+      if(msg.files){
+        for(const f of msg.files){
+          if(f.mimetype&&f.mimetype.startsWith('image/')&&f.url_private){
+            imageFiles.push({url:f.url_private,name:f.name||'image.jpg',mimeType:f.mimetype});
+          }
+        }
+      }
+    }
+
+    // Put text in the textarea
+    const textarea=document.getElementById('msgIn');
+    textarea.value=textParts.join('\n');
+
+    // Download images through proxy
+    if(imageFiles.length>0){
+      status.textContent=`Downloading ${imageFiles.length} images...`;
+      let downloaded=0;
+      for(const img of imageFiles){
+        try{
+          const proxyUrl=`${SLACK_PROXY}/file-proxy?url=${encodeURIComponent(img.url)}`;
+          const res=await fetch(proxyUrl,{headers:{'Authorization':'Bearer '+S.slackToken}});
+          if(res.ok){
+            const blob=await res.blob();
+            const reader=new FileReader();
+            reader.onload=function(e){
+              const dataUrl=e.target.result;
+              const base64=(dataUrl.split(',')[1])||'';
+              pendingImages.push({dataUrl,base64,mimeType:img.mimeType,name:img.name});
+              renderImagePreviews();
+            };
+            reader.readAsDataURL(blob);
+            downloaded++;
+          }
+        }catch(e){console.warn('Failed to download image:',img.name,e)}
+        // Small delay to avoid rate limits
+        if(downloaded%3===0&&downloaded>0)await new Promise(r=>setTimeout(r,1000));
+        status.textContent=`Downloading images ${downloaded}/${imageFiles.length}...`;
+      }
+    }
+
+    status.style.color='var(--success)';
+    status.textContent=`✓ Pulled ${textParts.length} messages + ${imageFiles.length} images from #${channelName}. Refreshing Craftable AVT...`;
+
+    // Every Slack pull → fresh Craftable AVT (so Parse cross-references against current data).
+    const slackSummary=`Slack: ${textParts.length} msgs + ${imageFiles.length} imgs from #${channelName}.`;
+    const craftRes=await runCraftableBotPull(msg=>{
+      status.textContent=`${slackSummary} Craftable: ${msg}`;
+    });
+    if(craftRes.ok){
+      status.style.color='var(--success)';
+      status.textContent=`✓ ${slackSummary} Fresh Craftable AVT imported. Hit "Parse & Add Issues" to process.`;
+    }else{
+      status.style.color='var(--watch)';
+      status.textContent=`✓ ${slackSummary} Craftable refresh failed (${craftRes.error}) — import AVT manually or hit Parse anyway.`;
+    }
+
+  }catch(e){
+    status.textContent='Error: '+e.message;
+    status.style.color='var(--error)';
+  }finally{
+    btn.disabled=false;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  CRAFTABLE API — helpers
+// ═══════════════════════════════════════════════════
+function apiHeaders(){
+  const h={'Content-Type':'application/json','Accept':'application/json'};
+  const k=S.apiKey;
+  if(S.authMethod==='bearer')h['Authorization']='Bearer '+k;
+  else if(S.authMethod==='xapi')h['X-API-Key']=k;
+  return h;
+}
+function apiUrl(path,params={}){
+  let url=S.apiBase+path;
+  if(S.authMethod==='query')params.api_key=S.apiKey;
+  const qs=Object.entries(params).filter(([,v])=>v!==undefined&&v!=='').map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&');
+  if(qs)url+='?'+qs;
+  return url;
+}
+
+async function apiFetch(path,params={},label=''){
+  const url=apiUrl(path,params);
+  apiLogLine(`<span class="req">→ GET ${url}</span>`);
+  try{
+    const res=await fetch(url,{headers:apiHeaders()});
+    const text=await res.text();
+    if(!res.ok){apiLogLine(`<span class="fail">← ${res.status} ${res.statusText}</span>`);apiLogLine(`<span class="fail">${text.slice(0,300)}</span>`);throw new Error(`${res.status}: ${text.slice(0,200)}`)}
+    let data;try{data=JSON.parse(text)}catch(e){apiLogLine(`<span class="ok">← ${res.status} (${text.length} bytes, non-JSON)</span>`);return text}
+    apiLogLine(`<span class="ok">← ${res.status} OK (${JSON.stringify(data).length} bytes)</span>`);
+    return data;
+  }catch(e){if(e.message.startsWith('Failed to fetch')){apiLogLine(`<span class="fail">← Network error — CORS or connectivity issue</span>`);apiLogLine(`<span class="info">Tip: If blocked by CORS, use the CSV import instead, or run through a proxy.</span>`)}throw e}
+}
+
+function apiLogLine(html){const el=document.getElementById('apiLog');el.innerHTML+='\n'+html;el.scrollTop=el.scrollHeight}
+
+// ═══════════════════════════════════════════════════
+//  API EXPLORER — Discover, Test, Configure
+// ═══════════════════════════════════════════════════
+async function discoverAPI(){
+  const base=document.getElementById('apiBase').value.trim().replace(/\/$/,'');
+  const key=document.getElementById('apiKeyExplorer').value.trim();
+  S.apiBase=base;S.apiKey=key;sv();
+  document.getElementById('apiLog').innerHTML='<span class="info">═══ API Discovery ═══</span>';
+
+  // Try common swagger/openapi spec locations
+  const specPaths=['/api-docs','/swagger.json','/openapi.json','/v3/api-docs','/swagger/v1/swagger.json','/../swagger.json','/../api-docs'];
+
+  let spec=null;
+  for(const sp of specPaths){
+    try{
+      apiLogLine(`<span class="req">Trying spec: ${base}${sp}</span>`);
+      const res=await fetch(base+sp,{headers:apiHeaders()});
+      if(res.ok){const t=await res.text();try{spec=JSON.parse(t);apiLogLine(`<span class="ok">✓ Found spec at ${sp}</span>`);break}catch(e){}}
+    }catch(e){}
+  }
+
+  if(!spec){
+    apiLogLine(`<span class="fail">\nCouldn't auto-fetch swagger spec (likely CORS).</span>`);
+    apiLogLine(`<span class="info">\n═══ MANUAL SETUP INSTRUCTIONS ═══</span>`);
+    apiLogLine(`<span class="info">1. Open in your browser: ${base}/swagger-ui/index.html</span>`);
+    apiLogLine(`<span class="info">2. Look for these endpoint groups:</span>`);
+    apiLogLine(`   • Locations / Venues — GET /locations or /establishments`);
+    apiLogLine(`   • Variance / Reports — GET /variance or /reports/variance`);
+    apiLogLine(`   • Products / Items  — GET /products or /items`);
+    apiLogLine(`<span class="info">3. Enter the paths in Settings → Discovered Endpoints</span>`);
+    apiLogLine(`<span class="info">4. Use "Test Auth" to verify your key works</span>`);
+
+    // Try common endpoints directly
+    apiLogLine(`\n<span class="info">═══ Probing Common Endpoints ═══</span>`);
+    const probes=['/locations','/establishments','/venues','/stores','/variance','/reports/variance','/reports/avt-summary','/reports/avt','/products','/items','/inventory','/counts','/me','/user','/organizations','/periods'];
+    for(const p of probes){
+      try{
+        const res=await fetch(apiUrl(p),{headers:apiHeaders()});
+        const status=res.status;
+        if(status===200){apiLogLine(`<span class="ok">✓ ${p} → 200 OK</span>`);
+          if(p.includes('location')||p.includes('establishment')||p.includes('venue')||p.includes('store')){S.endpoints.locations=p;apiLogLine(`  → Saved as Locations endpoint`)}
+          if(p.includes('variance')||p.includes('report')||p.includes('avt')){S.endpoints.variance=p;apiLogLine(`  → Saved as Variance endpoint`)}
+          if(p.includes('product')||p.includes('item')){S.endpoints.products=p;apiLogLine(`  → Saved as Products endpoint`)}
+        }else if(status===401||status===403){apiLogLine(`<span class="fail">✗ ${p} → ${status} (auth issue)</span>`)}
+        else{apiLogLine(`  ${p} → ${status}`)}
+      }catch(e){apiLogLine(`  ${p} → network error`)}
+    }
+    sv();renderSettings();
+    apiLogLine(`\n<span class="info">Discovery complete. Check Settings → Discovered Endpoints.</span>`);
+    return;
+  }
+
+  // Parse OpenAPI spec
+  apiLogLine(`\n<span class="info">═══ Parsing Spec ═══</span>`);
+  apiLogLine(`Title: ${spec.info?.title||'?'}  Version: ${spec.info?.version||'?'}`);
+
+  const paths=spec.paths||{};
+  const endpoints=Object.keys(paths);
+  apiLogLine(`Found ${endpoints.length} endpoints:\n`);
+
+  for(const ep of endpoints){
+    const methods=Object.keys(paths[ep]).filter(m=>['get','post','put','delete'].includes(m));
+    const desc=paths[ep][methods[0]]?.summary||paths[ep][methods[0]]?.description||'';
+    apiLogLine(`  ${methods.map(m=>m.toUpperCase()).join(',')} ${ep}${desc?' — '+desc:''}`);
+
+    const epl=ep.toLowerCase();
+    if(epl.includes('location')||epl.includes('establishment')||epl.includes('venue'))S.endpoints.locations=ep;
+    if(epl.includes('variance'))S.endpoints.variance=ep;
+    if(epl.includes('product')||epl.includes('item'))S.endpoints.products=ep;
+  }
+
+  sv();renderSettings();
+  apiLogLine(`\n<span class="ok">═══ Endpoints Configured ═══</span>`);
+  apiLogLine(`Locations: ${S.endpoints.locations||'(not found)'}`);
+  apiLogLine(`Variance:  ${S.endpoints.variance||'(not found)'}`);
+  apiLogLine(`Products:  ${S.endpoints.products||'(not found)'}`);
+  apiLogLine(`\n<span class="info">Now run "Test Auth" then "List Locations" to verify.</span>`);
+}
+
+async function testAuth(){
+  document.getElementById('apiLog').innerHTML+='<span class="info">\n═══ Auth Test ═══</span>';
+  try{
+    // Try a lightweight endpoint
+    const tryPaths=['/me','/user','/organizations',S.endpoints.locations,'/locations','/'].filter(Boolean);
+    for(const p of tryPaths){
+      try{
+        const res=await fetch(apiUrl(p),{headers:apiHeaders()});
+        if(res.status===200){apiLogLine(`<span class="ok">✓ Auth OK (${p} → 200)</span>`);return}
+        if(res.status===401){apiLogLine(`<span class="fail">✗ 401 Unauthorized — check your API key</span>`);return}
+        if(res.status===403){apiLogLine(`<span class="fail">✗ 403 Forbidden — key may lack permissions</span>`);return}
+      }catch(e){}
+    }
+    apiLogLine(`<span class="fail">Could not reach any endpoint. Check URL and network.</span>`);
+  }catch(e){apiLogLine(`<span class="fail">Error: ${e.message}</span>`)}
+}
+
+async function listLocations(){
+  apiLogLine(`<span class="info">\n═══ Listing Locations ═══</span>`);
+  const ep=S.endpoints.locations;
+  if(!ep){apiLogLine(`<span class="fail">No locations endpoint configured. Run Discovery first.</span>`);return}
+  try{
+    const data=await apiFetch(ep);
+    const locs=Array.isArray(data)?data:data.data||data.locations||data.establishments||data.results||[];
+    apiLogLine(`Found ${locs.length} location(s):`);
+    locs.forEach((l,i)=>{
+      const name=l.name||l.title||l.establishment_name||JSON.stringify(l).slice(0,80);
+      const id=l.id||l.location_id||l.establishment_id||'';
+      apiLogLine(`  ${i+1}. ${name} (id: ${id})`);
+      // Auto-add to venues
+      if(name&&!S.venues.some(v=>v.toLowerCase()===name.toLowerCase())){S.venues.push(name)}
+    });
+    sv();renderVS();renderSettings();
+    apiLogLine(`<span class="ok">Venues synced.</span>`);
+  }catch(e){apiLogLine(`<span class="fail">Error: ${e.message}</span>`)}
+}
+
+async function testVariance(){
+  apiLogLine(`<span class="info">\n═══ Testing Variance Pull ═══</span>`);
+  const ep=S.endpoints.variance;
+  if(!ep){apiLogLine(`<span class="fail">No variance endpoint configured. Run Discovery first.</span>`);return}
+  try{
+    const data=await apiFetch(ep);
+    const items=Array.isArray(data)?data:data.data||data.items||data.products||data.variance_items||data.results||[];
+    apiLogLine(`Received ${items.length} variance item(s).`);
+    if(items.length>0){
+      apiLogLine(`\nSample item structure:`);
+      apiLogLine(JSON.stringify(items[0],null,2).split('\n').map(l=>'  '+l).join('\n'));
+      apiLogLine(`\n<span class="ok">✓ Variance endpoint works. The automated pull will use this.</span>`);
+    }
+  }catch(e){apiLogLine(`<span class="fail">Error: ${e.message}</span>`)}
+}
+
+// ═══════════════════════════════════════════════════
+//  CRAFTABLE BOT — Auto-pull via local Playwright bot
+// ═══════════════════════════════════════════════════
+const CRAFT_BOT='http://localhost:3456';
+
+// Reusable bot-pull routine. `onStatus(msg)` receives progress strings.
+// Returns {ok:true} on success, {ok:false, error} on failure.
+async function runCraftableBotPull(onStatus){
+  const setStatus=msg=>{ if(typeof onStatus==='function')onStatus(msg); };
+
+  setStatus('Connecting to Craftable bot...');
+  let botOk=false;
+  try{
+    const check=await fetch(`${CRAFT_BOT}/status`,{signal:AbortSignal.timeout(3000)});
+    if(check.ok)botOk=true;
+  }catch(e){}
+
+  if(!botOk){
+    setStatus('⚠️ Craftable bot is not running. Start it with: node craftable-bot.js');
+    return{ok:false,error:'bot_not_running'};
+  }
+
+  setStatus('Telling bot to download AVT for all stores...');
+  const res=await fetch(`${CRAFT_BOT}/download?store=all`);
+  const data=await res.json();
+  if(!data.ok){
+    const err=data.error||'Unknown';
+    setStatus('Error: '+err);
+    return{ok:false,error:err};
+  }
+
+  setStatus('Bot is working... logging in & navigating Craftable');
+  for(let i=0;i<60;i++){
+    await new Promise(r=>setTimeout(r,3000));
+    try{
+      const poll=await fetch(`${CRAFT_BOT}/status`);
+      const st=await poll.json();
+      setStatus(`Bot: ${st.status}`);
+      if(st.status.startsWith('done:')){
+        setStatus('Downloading file from bot...');
+        const fileRes=await fetch(`${CRAFT_BOT}/file`);
+        if(!fileRes.ok){setStatus('Failed to get file from bot');return{ok:false,error:'file_fetch_failed'}}
+        const blob=await fileRes.blob();
+        if(typeof XLSX==='undefined'){
+          setStatus('Loading XLSX library...');
+          await new Promise((resolve,reject)=>{
+            const s=document.createElement('script');
+            s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+            s.onload=resolve;s.onerror=reject;
+            document.head.appendChild(s);
+          });
+        }
+        const fakeEvent={target:{files:[new File([blob],st.status.replace('done: ',''),{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})]}};
+        importCSV(fakeEvent);
+        setStatus('✅ Auto-imported AVT');
+        return{ok:true};
+      }
+      if(st.status.startsWith('error:')){
+        setStatus(st.status);
+        return{ok:false,error:st.status};
+      }
+    }catch(e){}
+  }
+  setStatus('Bot timed out after 3 minutes');
+  return{ok:false,error:'timeout'};
+}
+
+async function pullCraftableBot(){
+  const venueEl=document.getElementById('cVen');
+  const venue=venueEl?venueEl.value:'';
+  const btn=document.getElementById('craftBotBtn');
+  const status=document.getElementById('craftBotStatus');
+
+  btn.disabled=true;
+  status.style.display='block';
+  status.style.color='var(--accent)';
+
+  try{
+    const result=await runCraftableBotPull(msg=>{status.textContent=msg});
+    if(result.ok){
+      status.style.color='var(--success)';
+      status.textContent=`✅ Auto-imported AVT${venue?' for '+venue:''}`;
+    }else{
+      status.style.color='var(--error)';
+    }
+  }finally{
+    btn.disabled=false;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  CRAFTABLE — Pull AVT variance data
+// ═══════════════════════════════════════════════════
+async function pullCraftable(){
+  if(!S.apiKey){showCR(false,'Add your Craftable API key in Settings first.');return}
+
+  showCR(false,'<span class="spin">⟳</span> Pulling from Craftable...');
+  document.getElementById('cRes').style.display='block';
+  document.getElementById('cRes').className='result info';
+
+  try{
+    const store=document.getElementById('cVen').value;
+    const minVar=parseFloat(document.getElementById('cMin').value)||50;
+    const period=document.getElementById('cPeriod').value;
+    const catFilter=document.getElementById('cCat').value;
+
+    // Build params — Craftable AVT endpoints typically accept store_id, period, category
+    const params={};
+    if(store)params.store_id=store;
+    if(period==='last')params.period='last';
+    else params.period='current';
+    if(catFilter)params.category=catFilter;
+
+    // Try known AVT endpoint patterns
+    const ep=S.endpoints.variance||'/reports/avt-summary';
+    const data=await apiFetch(ep,params);
+
+    // Craftable can return nested data — handle multiple response shapes
+    let raw=[];
+    if(Array.isArray(data)){
+      raw=data;
+    }else if(data.data){
+      raw=Array.isArray(data.data)?data.data:[];
+    }else{
+      // Try to find the items array in the response
+      const keys=Object.keys(data);
+      for(const k of keys){
+        if(Array.isArray(data[k])&&data[k].length>0){raw=data[k];break}
+      }
+    }
+
+    // Extract period info if available
+    const periodInfo=data.period||data.date_range||data.period_name||'';
+    const storeName=data.store||data.store_name||data.establishment_name||'';
+    if(periodInfo||storeName){
+      const infoEl=document.getElementById('cPeriodInfo');
+      infoEl.style.display='block';
+      infoEl.innerHTML=`${storeName?'<strong>Store:</strong> '+esc(storeName)+' &nbsp;|&nbsp; ':''}${periodInfo?'<strong>Period:</strong> '+esc(String(periodInfo)):''}`;
+    }
+
+    // Map Craftable AVT fields to our format
+    // Craftable AVT columns: store, category, starting_inventory, purchases, transfers,
+    // depletions, actual_amount, theo_amount, variance_amt, variance_pct
+    const items=raw.filter(i=>{
+      const v=Math.abs(parseFloat(
+        i.variance_amt||i.variance_amount||i.variance_cost||i.variance_value||
+        i.variance_dollars||i.cost_variance||i.variance||0
+      ));
+      return v>=minVar;
+    }).map(i=>{
+      const rawVenue=store||i.store||i.store_name||i.location||i.location_name||
+        i.venue||i.establishment_name||storeName||'Unknown';
+      const rec={
+        venue:normalizeVenue(rawVenue),
+        item_name:i.name||i.product_name||i.item_name||i.product||i.description||'Unknown',
+        sku:(i.sku||i.product_id||i.upc||i.item_id||'').toString().trim(),
+        variance_dollars:parseFloat(i.variance_amt||i.variance_amount||i.variance_cost||
+          i.variance_value||i.variance_dollars||i.cost_variance||i.variance||0),
+        variance_pct:parseFloat(i.variance_pct||i.variance_percent||i.variance_percentage||
+          i['variance_%']||i.pct_variance||0),
+        variance_qty:parseFloat(i.variance_qty||i.quantity_variance||i.qty_variance||0),
+        category:i.category||i.cost_category||i.category_name||i.group||'',
+        actual_amount:parseFloat(i.actual_amount||i.actual||i.actual_cost||0),
+        theo_amount:parseFloat(i.theo_amount||i.theoretical||i.theoretical_amount||
+          i.theo||i.expected||0),
+        starting_inventory:parseFloat(i.starting_inventory||i.opening||i.start_inv||0),
+        purchases:parseFloat(i.purchases||i.received||0),
+        depletions:parseFloat(i.depletions||i.usage||i.sold||0),
+        waste:parseFloat(i.waste||i.wastage||i.spillage||0),
+        cu_price:parseFloat(i.cu_price||i.unit_cost||i.cost_per_unit||i.unit_price||0),
+        period:periodInfo||period
+      };
+      rec.item_id=stableItemId(rec);
+      return rec;
+    });
+
+    // Auto-detect store name and add to venues if new
+    if(items.length>0){
+      const detectedStores=[...new Set(items.map(i=>i.venue).filter(v=>v&&v!=='Unknown'))];
+      for(const ds of detectedStores){
+        if(!S.venues.some(v=>normalize(v)===normalize(ds))){
+          S.venues.push(ds);
+          apiLogLine&&apiLogLine(`<span class="info">Auto-added venue: ${ds}</span>`);
+        }
+      }
+      renderVS();
+    }
+
+    if(S.craftData&&S.craftData.length)snapshotPriorWeek();
+    S.craftData=items;S.lastPull=new Date().toISOString();sv();
+    crossRef();
+    const storeLabel=items.length>0?[...new Set(items.map(i=>i.venue))].join(', '):'';
+    showCR(true,`&#10003; Pulled ${items.length} variance item(s)${storeLabel?' for '+esc(storeLabel):''} | ${new Date().toLocaleTimeString()}`);
+    renderXRef();
+  }catch(e){
+    showCR(false,`Error: ${e.message}<br><br>Options:<br>• Run API Explorer to discover the correct variance endpoint<br>• Use "Import CSV" — export from Craftable's AVT Summary page (download icon top-right)<br>• Check if CORS is blocking browser requests`);
+  }
+}
+
+function showCR(ok,html){const el=document.getElementById('cRes');el.className='result '+(ok?'ok':'err');el.innerHTML=html;el.style.display='block'}
+
+// ═══════════════════════════════════════════════════
+//  CRAFTABLE — Import AVT Export (XLSX or CSV)
+// ═══════════════════════════════════════════════════
+function importCSV(ev){
+  const file=ev.target.files[0];if(!file)return;
+
+  // Handle XLSX files using SheetJS
+  if(file.name.endsWith('.xlsx')||file.name.endsWith('.xls')){
+    const reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        // Load SheetJS dynamically if not loaded
+        if(typeof XLSX==='undefined'){
+          showCR(false,'<span class="spin">⟳</span> Loading XLSX parser...');
+          document.getElementById('cRes').style.display='block';
+          const s=document.createElement('script');
+          s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+          s.onload=()=>processXLSX(e.target.result);
+          s.onerror=()=>showCR(false,'Failed to load XLSX parser. Try saving as CSV from Craftable instead.');
+          document.head.appendChild(s);
+        }else{processXLSX(e.target.result)}
+      }catch(err){showCR(false,'Import error: '+err.message)}
+    };
+    reader.readAsArrayBuffer(file);
+  }else{
+    // CSV fallback
+    const reader=new FileReader();
+    reader.onload=function(e){processCSVText(e.target.result)};
+    reader.readAsText(file);
+  }
+  ev.target.value='';
+}
+
+function processXLSX(data){
+  try{
+    const wb=XLSX.read(data,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+    // Find the header row — look for row containing "ITEM" or "STORE"
+    let headerIdx=-1;
+    let avtGeneratedAt=null;
+    for(let i=0;i<Math.min(15,rows.length);i++){
+      const row=rows[i].map(c=>String(c).trim().toUpperCase());
+      // Capture AVT generation timestamp if present in pre-header rows (Improvement E)
+      const rawJoined=rows[i].map(c=>String(c)).join(' ');
+      const m=rawJoined.match(/(?:generated|report date|pulled|as of)[:\s]+([0-9]{1,4}[-/][0-9]{1,2}[-/][0-9]{1,4}(?:[ T][0-9:]+)?)/i);
+      if(m&&!avtGeneratedAt)avtGeneratedAt=m[1];
+      if(row.includes('ITEM')||row.includes('PRODUCT')||row.some(c=>c.includes('ITEM'))){headerIdx=i;break}
+    }
+    if(headerIdx<0)throw new Error('Could not find column headers. Expected a row with ITEM or PRODUCT.');
+    S.avtGeneratedAt=avtGeneratedAt||S.avtGeneratedAt;
+
+    const hdrs=rows[headerIdx].map(c=>String(c).trim().toLowerCase().replace(/\s+/g,' '));
+    const dataRows=rows.slice(headerIdx+1);
+
+    // Map Craftable AVT Qty Details columns
+    const ci=(keywords)=>hdrs.findIndex(h=>keywords.some(k=>h.includes(k)));
+    const C={
+      store:ci(['store']),
+      id:ci(['id']),
+      item:ci(['item','product','name']),
+      cat:ci(['category','cat']),
+      start:ci(['start']),
+      purch:ci(['purchase']),
+      trans:ci(['transfer']),
+      depl:ci(['depletion']),
+      waste:ci(['waste']),
+      actual:ci(['actual inventory','actual']),
+      theo:ci(['theo inventory','theo']),
+      variance:ci(['variance']),
+      varPctAct:ci(['variance % actual','variance %']),
+      varPctDepl:ci(['variance % depletion']),
+      varValue:ci(['variance value']),
+      cuPrice:ci(['cu price','price','cost per unit','unit cost']),
+    };
+
+    if(C.item<0)throw new Error('No ITEM column found. Headers: '+hdrs.filter(h=>h).join(', '));
+
+    const minV=parseFloat(document.getElementById('cMin').value)||50;
+    const catFilter=document.getElementById('cCat').value;
+    const items=[];
+    let lastStore='';
+
+    for(const row of dataRows){
+      // Forward-fill store name (Craftable only puts it on first row of each store group)
+      const rawStore=String(row[C.store]||'').trim();
+      if(rawStore)lastStore=rawStore;
+      const rawStoreResolved=lastStore||document.getElementById('cVen').value||'Unknown';
+      const store=normalizeVenue(rawStoreResolved); // Bug 1: canonical venue at ingest
+
+      const itemName=String(row[C.item]||'').trim();
+      if(!itemName)continue;
+
+      const category=C.cat>=0?String(row[C.cat]||'').trim():'';
+      if(catFilter&&!category.includes(catFilter))continue;
+
+      const num=(idx)=>idx>=0?parseFloat(String(row[idx]).replace(/[$,]/g,''))||0:0;
+
+      const varValue=num(C.varValue);
+      const variance=num(C.variance);
+      // Use variance value ($) for filtering, fall back to qty variance * price
+      const varDollars=varValue||0;
+
+      if(Math.abs(varDollars)<minV&&C.varValue>=0)continue;
+
+      const rec={
+        venue:store,
+        item_name:itemName,
+        sku:C.id>=0?String(row[C.id]||'').trim():'',
+        variance_dollars:varDollars,
+        variance_pct:num(C.varPctAct),
+        category,
+        actual_amount:num(C.actual),
+        theo_amount:num(C.theo),
+        starting_inventory:num(C.start),
+        purchases:num(C.purch),
+        depletions:num(C.depl),
+        waste:num(C.waste),
+        cu_price:num(C.cuPrice),
+        variance_qty:variance,
+        period:'imported'
+      };
+      rec.item_id=stableItemId(rec);
+      items.push(rec);
+    }
+
+    const stores=[...new Set(items.map(i=>i.venue).filter(v=>v&&v!=='Unknown'))];
+    for(const ds of stores){if(!S.venues.some(v=>normalize(v)===normalize(ds))){S.venues.push(ds)}}
+    renderVS();
+
+    // Snapshot prior AVT before overwriting (Bug 4 — WoW reconciliation)
+    if(S.craftData&&S.craftData.length)snapshotPriorWeek();
+    S.craftData=items;S.lastPull=new Date().toISOString();sv();crossRef();
+    const tsNote=S.avtGeneratedAt?` · AVT generated ${S.avtGeneratedAt}`:'';
+    showCR(true,`&#10003; Imported ${items.length} variance items from ${stores.join(', ')||'file'} (${dataRows.length} total rows scanned, ${items.length} above $${minV} threshold)${tsNote}.`);
+    renderXRef();
+  }catch(err){showCR(false,'XLSX import error: '+err.message)}
+}
+
+function processCSVText(text){
+  try{
+    const allLines=text.split('\n').map(l=>l.trim()).filter(l=>l);
+
+    // Find header row — skip title/metadata rows, capture AVT generation timestamp
+    let headerIdx=0;
+    let avtGeneratedAt=null;
+    for(let i=0;i<Math.min(15,allLines.length);i++){
+      const upper=allLines[i].toUpperCase();
+      const m=allLines[i].match(/(?:generated|report date|pulled|as of)[:\s,"]+([0-9]{1,4}[-/][0-9]{1,2}[-/][0-9]{1,4}(?:[ T][0-9:]+)?)/i);
+      if(m&&!avtGeneratedAt)avtGeneratedAt=m[1];
+      if(upper.includes('ITEM')||upper.includes('PRODUCT')||upper.includes('STORE')){
+        const cols=csvLine(allLines[i]);
+        if(cols.length>=5){headerIdx=i;break}
+      }
+    }
+    S.avtGeneratedAt=avtGeneratedAt||S.avtGeneratedAt;
+
+    const hdrs=csvLine(allLines[headerIdx]).map(h=>h.toLowerCase().trim().replace(/\s+/g,' '));
+    const col=(keywords)=>hdrs.findIndex(h=>keywords.some(k=>h.includes(k)));
+    const nI=col(['item','product','name','description']);
+    const vI=col(['variance value','variance amt','variance $','cost_variance']);
+    const vpI=col(['variance %','variance_pct']);
+    const cI=col(['category','cat']);
+    const sI=col(['store','venue','location']);
+    const skI=col(['sku','upc','id']);
+    const actI=col(['actual inventory','actual amount','actual']);
+    const theoI=col(['theo inventory','theo amount','theo']);
+    const startI=col(['start']);
+    const purI=col(['purchase']);
+    const depI=col(['depletion']);
+    const prI=col(['cu price','price','unit cost']);
+    const varQI=col(['variance']);
+
+    if(nI<0)throw new Error('No ITEM column found. Headers: '+hdrs.filter(h=>h).join(', '));
+    const minV=parseFloat(document.getElementById('cMin').value)||50;
+    const items=[];
+    let lastStore='';
+
+    // CSV path also needs a WASTE column index for parity with XLSX
+    const wI=col(['waste']);
+    const trI=col(['transfer']);
+    for(let i=headerIdx+1;i<allLines.length;i++){
+      const c=csvLine(allLines[i]);
+      const rawStore=sI>=0?String(c[sI]||'').trim():'';
+      if(rawStore)lastStore=rawStore;
+
+      const itemName=nI>=0?String(c[nI]||'').trim():'';
+      if(!itemName)continue;
+
+      const num=(idx)=>idx>=0?parseFloat(String(c[idx]).replace(/[$,%]/g,''))||0:0;
+      const vd=num(vI);
+      if(Math.abs(vd)<minV&&vI>=0)continue;
+
+      const rawStoreResolved=lastStore||document.getElementById('cVen').value||'Unknown';
+      const rec={
+        venue:normalizeVenue(rawStoreResolved),
+        item_name:itemName,sku:skI>=0?String(c[skI]||'').trim():'',
+        variance_dollars:vd,variance_pct:num(vpI),category:cI>=0?String(c[cI]||'').trim():'',
+        actual_amount:num(actI),theo_amount:num(theoI),starting_inventory:num(startI),
+        purchases:num(purI),depletions:num(depI),waste:num(wI),transfers:num(trI),
+        cu_price:num(prI),variance_qty:num(varQI),
+        period:'imported'
+      };
+      rec.item_id=stableItemId(rec);
+      items.push(rec);
+    }
+    const stores=[...new Set(items.map(i=>i.venue).filter(v=>v&&v!=='Unknown'))];
+    for(const ds of stores){if(!S.venues.some(v=>normalize(v)===normalize(ds))){S.venues.push(ds)}}
+    renderVS();
+    if(S.craftData&&S.craftData.length)snapshotPriorWeek();
+    S.craftData=items;S.lastPull=new Date().toISOString();sv();crossRef();
+    const tsNote=S.avtGeneratedAt?` · AVT generated ${S.avtGeneratedAt}`:'';
+    showCR(true,`&#10003; Imported ${items.length} items${stores.length?' from '+stores.join(', '):''}${tsNote}.`);
+    renderXRef();
+  }catch(err){showCR(false,'CSV import error: '+err.message)}
+}
+function csvLine(l){if(!l)return[];const r=[];let c='',q=false;for(let i=0;i<l.length;i++){const ch=l[i];if(ch==='"'){q=!q;continue}if(ch===','&&!q){r.push(c);c='';continue}c+=ch}r.push(c);return r}
+
+// ═══════════════════════════════════════════════════
+//  AUTOMATION — Scheduled pulls
+// ═══════════════════════════════════════════════════
+let autoTimer=null;
+function setupAutoPull(){
+  if(autoTimer){clearInterval(autoTimer);autoTimer=null}
+  const ind=document.getElementById('autoInd');const lbl=document.getElementById('autoLabel');
+  if(S.interval>0&&S.apiKey&&S.endpoints.variance){
+    autoTimer=setInterval(()=>{pullCraftable()},S.interval*60*1000);
+    ind.className='auto-indicator running';lbl.textContent=`Auto: ${S.interval}m`;
+  }else{ind.className='auto-indicator stopped';lbl.textContent='Auto: Off'}
+}
+
+// ═══════════════════════════════════════════════════
+//  GPT-4o-mini via GitHub Models
+// ═══════════════════════════════════════════════════
+//  IMAGE HANDLING — drag, drop, paste, preview
+// ═══════════════════════════════════════════════════
+let pendingImages = []; // Array of {dataUrl, base64, mimeType}
+
+function setupImageHandlers(){
+  const drop=document.getElementById('imgDrop');
+  if(!drop)return;
+  drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('dragover')});
+  drop.addEventListener('dragleave',()=>drop.classList.remove('dragover'));
+  drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('dragover');addFiles(e.dataTransfer.files)});
+  // Global paste handler for images
+  document.addEventListener('paste',e=>{
+    const items=e.clipboardData?.items;if(!items)return;
+    for(const item of items){
+      if(item.type.startsWith('image/')){
+        e.preventDefault();
+        const blob=item.getAsFile();
+        if(blob)processImageFile(blob);
+      }
+    }
+  });
+}
+
+function addImageFiles(ev){addFiles(ev.target.files);ev.target.value='';}
+function addFiles(files){for(const f of files){if(f.type.startsWith('image/'))processImageFile(f)}}
+
+function processImageFile(file){
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const dataUrl=e.target.result;
+    const base64=(dataUrl.split(',')[1])||'';
+    const mimeType=file.type||'image/jpeg';
+    pendingImages.push({dataUrl,base64,mimeType,name:file.name||'image'});
+    renderImagePreviews();
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage(idx){
+  pendingImages.splice(idx,1);
+  renderImagePreviews();
+}
+
+function renderImagePreviews(){
+  const wrap=document.getElementById('imgPreviews');
+  const countEl=document.getElementById('imgCount');
+  wrap.innerHTML='';
+  pendingImages.forEach((img,i)=>{
+    const div=document.createElement('div');div.className='img-thumb';
+    div.innerHTML=`<img src="${img.dataUrl}" alt="${img.name}"><button class="rm" onclick="removeImage(${i})">&times;</button>`;
+    wrap.appendChild(div);
+  });
+  if(pendingImages.length>0){
+    countEl.style.display='block';
+    countEl.textContent=`${pendingImages.length} image${pendingImages.length>1?'s':''} added — AI will read bottle labels and extract product names`;
+  }else{
+    countEl.style.display='none';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  AI PARSING — Text + Images via GPT-4o-mini Vision
+// ═══════════════════════════════════════════════════
+async function parseWithAI(text,venue,images){
+  const sysPrompt=`You are an inventory issue parser for "${venue}" (H.Wood Group).
+
+Parse these Slack messages and extract EVERY inventory issue you can find. Be thorough — extract ALL items mentioned by name, even casually. Return a JSON array.
+
+For each issue found:
+{ "item_name": "Full product name with size", "sku": null, "issue_type": "(see below)", "quantity": number|null, "location": "where in venue"|null, "notes": "brief description max 120 chars" }
+
+ISSUE TYPE — use the EXACT correct one. These are DIFFERENT issues:
+- "Product not scanning" = product EXISTS in Craftable but barcode won't scan. Keywords: "doesn't scan", "barcode did not scan", "not scanning", "entered manually"
+- "Product not in Craftable" = product does NOT EXIST in Craftable at all. Keywords: "not in craftable", "not in inventory", "can't find in system"
+- "Scans as different item" = barcode scans but shows wrong product. Keywords: "scans as", "scans in as"
+- "No Sticker" = no barcode sticker on the bottle
+- "Missing" = product is missing or unaccounted for
+- "Quantity mismatch" = count doesn't match expected
+- "Mislabeled" = wrong label, misspelled in system, variant issue. Keywords: "should be removed", "misspelled", "wrong variant"
+- "Other" = anything else
+
+IMPORTANT — Be aggressive about extraction:
+- "Remy Martin 1738 750ml doesnt scan" → issue_type: "Product not scanning"
+- "Red Bull peach 8.4oz not in Craftable" → issue_type: "Product not in Craftable"
+- "Not scanning in Back bar: Patron añejo 750ml" → issue_type: "Product not scanning"
+- "Not in Craftable, storage room: Maestro Dobel 50" → issue_type: "Product not in Craftable"
+- "Variant Moet 'Imperal' should be removed" → issue_type: "Mislabeled"
+
+H.Wood Group message format — staff often write: "product name, size, location, issue". Examples:
+- "Just One Drink 750ml prep Bar fridges Product not in craftable" → item: "Just One Drink 750ml", location: "Bar fridges", issue: "Product not in Craftable"
+- "San Pelligrino 1L, Walk In, Product Doesnt Scan" → item: "San Pelligrino 1L"
+- "Clase Azul Ultra Anejo, Service Well, Product Not In Craftable" → item: "Clase Azul Ultra Anejo"
+- "Tyler 'Mae Estate' Chardonnay 2021 750ml, Wine Rack, No Sticker" → item: "Tyler Mae Estate Chardonnay 2021 750ml"
+
+WATCH OUT for product names that look like common phrases but ARE real products:
+- "Just One Drink" = a real product brand
+- "Still Gin" = a real gin brand
+- "Cold Brew" = a real prep item
+- "Olive Juice" = a real prep item
+Treat the FIRST words before any size (ml/oz/L) or location as the product name.
+
+GROUPED FORMAT — Staff often list an issue type or location as a header, then products underneath:
+  "Not scanning
+   Game room:
+   Glenmorangie 18yr 750ml
+   Cockburns 10yr tawny port 750ml"
+→ ALL items under "Not scanning" inherit issue_type "Product not scanning" and location "Game room"
+  "No stickers, 2nd floor wine:
+   Chateau Pichon Baron 1998 750ml
+   Vega Sicilia 2001 750ml"
+→ ALL items inherit issue_type "No Sticker" and location "2nd floor wine"
+Look for these header patterns and apply the issue type to EVERY product listed below until the next header.
+
+ONLY skip a message if it has NO product name at all and just describes a location with a photo reference.
+
+When in doubt, INCLUDE the item. Combine duplicates. Return [] only if truly zero products named.
+
+CRITICAL: Return ONLY a valid JSON array. No explanation, no prose, no markdown. Just the raw JSON array starting with [ and ending with ].` + getInventoryHint();
+
+  // Build message content — text + images
+  const content = [];
+
+  // Add text if present
+  if(text && text.trim()) {
+    content.push({type:'text', text: text});
+  }
+
+  // Add images if present
+  if(images && images.length > 0) {
+    content.push({type:'text', text:`\n\nThe following ${images.length} image(s) are photos of bottles/labels from the inventory count. For EACH image, identify the product name, size, and any visible issues (damaged label, no sticker, etc). Include every product you can read from the labels.`});
+    for(const img of images) {
+      content.push({
+        type:'image_url',
+        image_url:{url:`data:${img.mimeType};base64,${img.base64}`, detail:'auto'}
+      });
+    }
+  }
+
+  if(content.length===0) return [];
+
+  const res=await fetch('https://models.inference.ai.azure.com/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+S.githubPat},
+    body:JSON.stringify({model:'gpt-4o-mini',temperature:0.3,max_tokens:4000,messages:[
+      {role:'system',content:sysPrompt},
+      {role:'user',content:content}
+    ]})
+  });
+  if(!res.ok){const t=await res.text();throw new Error(`GitHub Models API ${res.status}: ${t.slice(0,200)}`)}
+  const d=await res.json();
+  const raw=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'').trim();
+  if(!raw)return[];
+
+  // Robust JSON extraction — handle AI returning prose around the JSON
+  let parsed;
+  try{
+    // Try direct parse first
+    parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+  }catch(e1){
+    // Try to find JSON array in the response
+    const arrMatch=raw.match(/\[[\s\S]*\]/);
+    if(arrMatch){
+      try{parsed=JSON.parse(arrMatch[0])}catch(e2){parsed=[]}
+    }else{
+      // Try to find JSON object and wrap in array
+      const objMatch=raw.match(/\{[\s\S]*\}/);
+      if(objMatch){
+        try{parsed=[JSON.parse(objMatch[0])]}catch(e3){parsed=[]}
+      }else{
+        parsed=[];
+      }
+    }
+  }
+  if(!Array.isArray(parsed))parsed=[];
+  return parsed.filter(i=>i&&i.item_name&&isValidProductName(i.item_name));
+}
+
+// ═══════════════════════════════════════════════════
+//  SCORING
+// ═══════════════════════════════════════════════════
+function isWine(i){const c=String(i.category||'').toLowerCase();return c.includes('5320')||c.includes('wine')}
+// Multi-dimensional flag check — any ONE dimension trips the flag (Improvement B).
+// Returns {flagged, dims: {d$, dQty, dPct}} so callers can explain WHY an item was caught.
+function dimCheck(i){
+  const wine=isWine(i);
+  const varThresh=wine?(S.threshWine||200):(S.threshLiquor||50);
+  const qtyThresh=S.threshQtyUnits||S.threshBottle||1;
+  const pctThresh=S.threshPct||10;
+  const v=Math.abs(i.variance_dollars||0);
+  const q=Math.abs(i.variance_qty||0);
+  const p=Math.abs(i.variance_pct||0);
+  const d$=v>=varThresh;
+  const dQty=q>=qtyThresh;
+  const dPct=p>=pctThresh;
+  return{flagged:d$||dQty||dPct,d$,dQty,dPct};
+}
+// R2 Issue 4 — redefined severity tiers for meaningful discrimination.
+// HIGH:   |$|≥500 OR |qty|≥10 OR (CHRONIC and |$|≥100)
+// MEDIUM: |$|≥150 OR |qty|≥3 OR |%|≥25
+// LOW:    anything else flagged by the basic threshold
+// WATCH:  below flagging threshold but WoW-worsening (monitor, don't recount)
+// CRITICAL retained for very extreme outliers so long-running CHRONIC + huge-$ still surfaces.
+function scoreSev(i){
+  const v=Math.abs(i.variance_dollars||0);
+  const q=Math.abs(i.variance_qty||0);
+  const p=Math.abs(i.variance_pct||0);
+  const weeks=i.weeks_flagged||1;
+  const chronic=weeks>=4;
+  const wowWorse=i.wow_tag==='Worsened';
+  // Extreme outliers (preserved so a chronic 5k-variance still pops visibly)
+  if(v>=2000&&chronic)return'CRITICAL';
+  // HIGH rules per R2 spec
+  if(v>=500)return'HIGH';
+  if(q>=10)return'HIGH';
+  if(chronic&&v>=100)return'HIGH';
+  // MEDIUM rules per R2 spec
+  if(v>=150)return'MEDIUM';
+  if(q>=3)return'MEDIUM';
+  if(p>=25)return'MEDIUM';
+  // Anything else flagged by the (configurable) basic threshold
+  const dc=dimCheck(i);
+  if(dc.flagged)return'LOW';
+  // Below threshold but trending worse WoW — monitor only
+  if(wowWorse)return'WATCH';
+  return'LOW';
+}
+function needsRC(i){
+  // After Count 2, items are finalized — no third recount, regardless of severity.
+  // Remaining variances are real (shrinkage / theft / receiving error), not count error.
+  if(i.count2_finalized)return false;
+  const s=i.severity;
+  // Recount HIGH + CRITICAL always; MEDIUM as time allows; LOW skipped; WATCH monitor-only.
+  if(s==='CRITICAL'||s==='HIGH'||s==='MEDIUM')return true;
+  return false;
+}
+// Repeat status — 3-bucket (R2 Issue 2).
+function computeRepeatStatus(weeks){
+  if(weeks>=4)return'CHRONIC';
+  if(weeks>=2)return'REPEAT';
+  return'NEW';
+}
+function normalize(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+function sevOrd(s){return{CRITICAL:0,HIGH:1,MEDIUM:2,WATCH:3,LOW:4}[s]??5}
+function weekLabel(){const n=new Date(),d=n.getDay(),b=d===0?6:d-1,m=new Date(n);m.setDate(n.getDate()-b);return`Week ${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,'0')}-${String(m.getDate()).padStart(2,'0')}`}
+
+// ═══════════════════════════════════════════════════
+//  CROSS-REFERENCE
+// ═══════════════════════════════════════════════════
+const SIZE_TOKENS=new Set(['750ml','1l','375ml','700ml','1000ml','500ml','200ml','187ml','15l','175l','84oz','84floz','12oz','112floz','16floz','32floz','64oz','05gal','1gal','1each','1pack','8oz','750','375','700','1000','ml','oz','l','fl','720ml','739ml','250ml','360ml']);
+const JUNK_NAMES=new Set(['bottle','bottles','fridge','rack','room','shelf','bar','floor','stickers','sticker','craftable','wine','liquor','champagne','find','non','no','ceramic','small','product','not','scanning','does','scan','doesnt','one','two','three','four','five','six','seven','eight','nine','ten','row','rows','quantity','qty','located','labeled','unlabeled','unmarked','missing','damaged','bev','beverage','inventory','2nd','3rd','1st','4th','to','in','the','and','or','from','with','for','this','that','does','dont','prep','unknown','item','items','complete','done','wells','low']);
+
+function isValidProductName(name){
+  if(!name||typeof name!=='string'||name.length<4)return false;
+  const words=name.toLowerCase().split(/\s+/).filter(w=>w.length>1&&!SIZE_TOKENS.has(w));
+  if(words.length===0)return false;
+  const meaningful=words.filter(w=>!JUNK_NAMES.has(w)&&!/^\d+$/.test(w));
+  return meaningful.length>=1;
+}
+
+function similarity(a,b){
+  if(a===b)return 1;
+  if(!a||!b)return 0;
+  if(a.length<5||b.length<5)return 0;
+  // Substring match — only if shorter is substantial
+  const shorter=a.length<=b.length?a:b, longer=a.length>b.length?a:b;
+  if(shorter.length>=8&&longer.includes(shorter)&&shorter.length/longer.length>=0.4)return 0.95;
+  // Word-level matching (remove size tokens)
+  const wa=new Set(a.split(/\s+/).filter(w=>!SIZE_TOKENS.has(w)&&w.length>1));
+  const wb=new Set(b.split(/\s+/).filter(w=>!SIZE_TOKENS.has(w)&&w.length>1));
+  // Trigram set once — used by word branch AND as a rescue when no word overlaps
+  const triA=new Set(),triB=new Set();
+  for(let i=0;i<a.length-2;i++)triA.add(a.slice(i,i+3));
+  for(let i=0;i<b.length-2;i++)triB.add(b.slice(i,i+3));
+  let triOvlp=0;triA.forEach(t=>{if(triB.has(t))triOvlp++});
+  const triScore=triA.size&&triB.size?(2*triOvlp)/(triA.size+triB.size):0;
+  // If no words on either side, trigrams are the only signal available.
+  if(!wa.size||!wb.size)return triScore;
+  let overlap=0;wa.forEach(w=>{if(wb.has(w))overlap++});
+  if(!overlap){
+    // No shared word — rescue brand misspellings via trigrams (e.g. "Hennesy" vs "Hennessy").
+    // Cap at 0.6 so a pure-trigram match lands in REVIEW, not CONFIRMED.
+    return Math.min(triScore,0.6);
+  }
+  // Require at least one meaningful overlapping word (>2 chars)
+  let hasMeaningful=false;wa.forEach(w=>{if(wb.has(w)&&w.length>2)hasMeaningful=true});
+  if(!hasMeaningful)return triScore;
+  const wordScore=(2*overlap)/(wa.size+wb.size);
+  return Math.max(wordScore,triScore);
+}
+const SIM_THRESHOLD=0.42;
+
+// ═══════════════════════════════════════════════════
+//  R2 MATCHING — NFKD + aliases + size gate + tiered scoring (Issue 5)
+// ═══════════════════════════════════════════════════
+// Built-in typo/spelling map. User-editable entries merge on top via S.customTypoAliases.
+// Built-in typo map. Seeded from real AVT/Slack data across H.Wood venues.
+// Keep names singular-canonical; singular/plural collapse handled via the
+// dedicated SINGULAR_PLURAL map below so we don't conflate "Vineyard" (brand
+// word) with "vineyards" (generic).
+const DEFAULT_TYPO_ALIASES={
+  // Champagne / still wine typos observed on Delilah LA + Nice Guy AVTs
+  'imperal':'imperial','imperale':'imperial','imperel':'imperial',
+  'vinyard':'vineyard','vinyards':'vineyard',
+  'chardonay':'chardonnay','chardonais':'chardonnay','chardonnary':'chardonnay',
+  'sauvingnon':'sauvignon','savignon':'sauvignon','sauvignion':'sauvignon','sauvingon':'sauvignon','sav':'sauvignon',
+  'caberet':'cabernet','cabernete':'cabernet','cabernat':'cabernet',
+  'reisling':'riesling','rieseling':'riesling',
+  'merlo':'merlot',
+  // Proper-noun / appellation typos
+  'barbra':'barbara',
+  'rosalio':'rosolio', // Italicus 'Rosolio'
+  // Spirits typos
+  'hennesy':'hennessy','hennesey':'hennessy','henny':'hennessy',
+  'casamigo':'casamigos',
+  'patron':'patron','patrón':'patron'
+};
+// Singular/plural collapse applied AFTER typos, whole-word.
+const SINGULAR_PLURAL={
+  'vineyards':'vineyard',
+  'cellars':'cellar'
+};
+// Brand-level aliases (bidirectional) — normalizes to the first form in the list.
+const DEFAULT_BRAND_ALIASES=[
+  ['moet & chandon','moet chandon','moet','moët','moët & chandon'],
+  ['grey goose','greygoose'],
+  ['don julio','donjulio'],
+  ['veuve clicquot','veuve','clicquot'],
+  ['stranahans','stranahan','stranahan\'s']
+];
+function getAliasMap(){
+  const merged={...DEFAULT_TYPO_ALIASES,...(S.customTypoAliases||{})};
+  return merged;
+}
+function escapeRegex(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+// Normalize a product name — NFKD, punctuation/whitespace, lowercase, typo + brand aliases.
+function normalizeName(s){
+  if(!s)return '';
+  let t=String(s);
+  // Unicode NFKD — collapse accents, compat forms
+  try{t=t.normalize('NFKD').replace(/[̀-ͯ]/g,'')}catch(e){}
+  // Curly quotes + prime marks → straight
+  t=t.replace(/[‘’‛′´]/g,"'").replace(/[“”‟″]/g,'"');
+  // Em/en dashes + minus → hyphen
+  t=t.replace(/[‒–—―−]/g,'-');
+  // Non-breaking space + zero-width chars
+  t=t.replace(/ /g,' ').replace(/[​-‍⁠﻿]/g,'');
+  // Strip stray apostrophes and parentheses (they make tokens differ spuriously)
+  t=t.replace(/['"`]/g,'').replace(/[()[\]]/g,' ');
+  // Lowercase
+  t=t.toLowerCase();
+  // Apply typo aliases (whole-word), then singular/plural collapse.
+  const typos=getAliasMap();
+  for(const [bad,good] of Object.entries(typos)){
+    t=t.replace(new RegExp('\\b'+escapeRegex(bad)+'\\b','g'),good);
+  }
+  for(const [plural,singular] of Object.entries(SINGULAR_PLURAL)){
+    t=t.replace(new RegExp('\\b'+escapeRegex(plural)+'\\b','g'),singular);
+  }
+  // Apply brand aliases — rewrite every alias to the canonical (first) form
+  for(const group of DEFAULT_BRAND_ALIASES){
+    const canon=group[0];
+    for(let k=1;k<group.length;k++){
+      t=t.replace(new RegExp('\\b'+escapeRegex(group[k])+'\\b','g'),canon);
+    }
+  }
+  // Collapse whitespace and misc punctuation
+  t=t.replace(/[,;:!?]/g,' ').replace(/\s+/g,' ').trim();
+  return t;
+}
+
+// Extract size (bottle volume) and return {size_ml, size_label, name_without_size}.
+// Size mismatch is a HARD gate — we never match 750ml to 1L regardless of name score.
+const SIZE_RE=/\b(\d+(?:\.\d+)?)\s*(ml|cl|l|oz|floz|gal|liter|litre|litres)\b/gi;
+function extractSize(s){
+  const src=String(s||'');
+  let m,lastMatch=null;
+  const re=new RegExp(SIZE_RE.source,'gi');
+  while((m=re.exec(src))!==null)lastMatch=m;
+  if(!lastMatch)return{size_ml:0,size_label:'',name_without_size:src};
+  const val=parseFloat(lastMatch[1]);
+  const unit=lastMatch[2].toLowerCase();
+  let ml=0;
+  if(unit==='ml')ml=val;
+  else if(unit==='cl')ml=val*10;
+  else if(unit==='l'||unit==='liter'||unit.startsWith('litre'))ml=val*1000;
+  else if(unit==='oz'||unit==='floz')ml=val*29.5735;
+  else if(unit==='gal')ml=val*3785.41;
+  return{
+    size_ml:Math.round(ml),
+    size_label:`${val}${unit}`,
+    name_without_size:src.replace(re,'').replace(/\s+/g,' ').trim()
+  };
+}
+
+// Extract 4-digit vintage year (1900-2099). Used for display AND for soft matching.
+function extractVintage(s){const m=String(s||'').match(/\b(19|20)\d{2}\b/);return m?parseInt(m[0],10):null}
+
+// ═══════════════════════════════════════════════════
+//  R3 Issue 3 — STRUCTURED PRODUCT PARSING
+// ═══════════════════════════════════════════════════
+// Varietal canonical list. Order matters: longer phrases first so "cabernet franc"
+// doesn't get shortened to "cabernet" by the sauvignon match. Anything here becomes
+// a HARD gate in matchProduct — products with different varietals never match.
+const VARIETALS=[
+  'cabernet sauvignon','cabernet franc','pinot noir','pinot grigio','pinot gris','pinot blanc',
+  'sauvignon blanc','chardonnay','chenin blanc','sangiovese','tempranillo','grenache','syrah','shiraz',
+  'merlot','malbec','zinfandel','riesling','gewurztraminer','viognier','gruner veltliner',
+  'nebbiolo','barolo','barbera','barbaresco','brunello','chianti','amarone','bordeaux',
+  'champagne','prosecco','cava','rosé','rose','sparkling',
+  // Spirits categories (loose — these rarely collide at the SKU level)
+  'vodka','gin','rum','tequila','mezcal','whiskey','whisky','scotch','bourbon','rye','cognac','armagnac','brandy',
+  'liqueur','aperitif','amaro','vermouth'
+];
+// Wines/spirits frequently encode the designation (vineyard, cuvée, appellation) inside
+// quotes on the AVT. "Foxen 'Bien Nacido Block 8' Pinot Noir", "Tyler 'Sta. Rita Hills' Chardonnay".
+// We extract the quoted chunk; if only one side has a designation we allow the match but
+// surface a flag.
+function extractDesignation(raw){
+  const s=String(raw||'');
+  // Try straight quotes first, then curly (normalized form usually straight by now)
+  const m=s.match(/['"']([^'"'\n]{2,60})['"']/);
+  if(m)return m[1].trim();
+  return null;
+}
+function extractVarietal(norm){
+  for(const v of VARIETALS){
+    const re=new RegExp('\\b'+v.replace(/\s+/g,'\\s+')+'\\b','i');
+    if(re.test(norm))return v.toLowerCase();
+  }
+  return null;
+}
+function extractBrand(norm,varietal){
+  // Brand = the leading word(s) before the first comma, the first quoted designation,
+  // a 4-digit vintage, a size token, or the varietal itself.
+  let s=norm;
+  if(varietal){s=s.split(new RegExp('\\b'+varietal.replace(/\s+/g,'\\s+')+'\\b','i'))[0]}
+  // Chop at first comma or 4-digit year
+  s=s.split(',')[0];
+  s=s.replace(/\b(19|20)\d{2}\b.*$/,'');
+  // Chop at the first size token
+  s=s.replace(SIZE_RE,'');
+  return s.replace(/\s+/g,' ').trim()||null;
+}
+// Pure parser — takes the raw item_name + optional pre-normalized form.
+// Callers should pass raw; the function handles normalization internally.
+function parseProduct(raw){
+  const rawStr=String(raw||'');
+  const norm=normalizeName(rawStr);
+  const sz=extractSize(rawStr);
+  const vintage=extractVintage(norm);
+  const designation=extractDesignation(rawStr);
+  const varietal=extractVarietal(norm);
+  const brand=extractBrand(norm,varietal);
+  return{
+    raw:rawStr,normalized:norm,
+    brand,designation,varietal,vintage,
+    size_ml:sz.size_ml||null,size_label:sz.size_label||''
+  };
+}
+// Gate check between two parsed products. Returns {ok, reason, flag} where:
+//   ok=true + flag set → proceed but tag (vintage mismatch)
+//   ok=true + no flag → proceed cleanly
+//   ok=false → hard gate, do NOT match
+function gateParsedPair(pa,pb){
+  if(pa.size_ml&&pb.size_ml&&pa.size_ml!==pb.size_ml){
+    return{ok:false,reason:`size_mismatch:${pa.size_ml}ml_vs_${pb.size_ml}ml`};
+  }
+  if(pa.varietal&&pb.varietal&&pa.varietal!==pb.varietal){
+    return{ok:false,reason:`varietal_differs:${pa.varietal}_vs_${pb.varietal}`};
+  }
+  if(pa.designation&&pb.designation){
+    const da=normalizeName(pa.designation),db=normalizeName(pb.designation);
+    // Tolerate minor typos on designations — token_set_ratio >= 85 is "same place".
+    if(da!==db&&tokenSetRatio(da,db)<85){
+      return{ok:false,reason:`designation_differs:${pa.designation}_vs_${pb.designation}`};
+    }
+  }
+  if(pa.vintage&&pb.vintage&&pa.vintage!==pb.vintage){
+    if(Math.abs(pa.vintage-pb.vintage)>1){
+      return{ok:false,reason:`vintage_too_far:${pa.vintage}_vs_${pb.vintage}`};
+    }
+    return{ok:true,flag:`VINTAGE_MISMATCH:${pa.vintage}vs${pb.vintage}`};
+  }
+  return{ok:true};
+}
+
+// RapidFuzz-style token_set_ratio, 0–100. Symmetric-diff trick for robustness on
+// disordered tokens and size tokens.
+function tokenSetRatio(a,b){
+  const tokA=[...new Set(a.split(/\s+/).filter(w=>w.length>1&&!SIZE_TOKENS.has(w)))].sort();
+  const tokB=[...new Set(b.split(/\s+/).filter(w=>w.length>1&&!SIZE_TOKENS.has(w)))].sort();
+  if(!tokA.length||!tokB.length)return 0;
+  const setA=new Set(tokA),setB=new Set(tokB);
+  const intersect=tokA.filter(t=>setB.has(t)).sort();
+  const diffA=tokA.filter(t=>!setB.has(t)).sort();
+  const diffB=tokB.filter(t=>!setA.has(t)).sort();
+  const s1=intersect.join(' ');
+  const s2=(intersect.concat(diffA)).join(' ');
+  const s3=(intersect.concat(diffB)).join(' ');
+  const r=(x,y)=>{
+    if(!x&&!y)return 100;
+    if(!x||!y)return 0;
+    // Levenshtein-backed ratio
+    const lx=x.length,ly=y.length;
+    if(!lx||!ly)return 0;
+    const dp=new Array(ly+1);for(let j=0;j<=ly;j++)dp[j]=j;
+    for(let i=1;i<=lx;i++){
+      let prev=dp[0];dp[0]=i;
+      for(let j=1;j<=ly;j++){
+        const temp=dp[j];
+        dp[j]=x[i-1]===y[j-1]?prev:1+Math.min(prev,dp[j-1],dp[j]);
+        prev=temp;
+      }
+    }
+    const d=dp[ly];
+    return Math.round(100*(1-d/Math.max(lx,ly)));
+  };
+  return Math.max(r(s1,s2),r(s1,s3),r(s2,s3));
+}
+
+// Main match entrypoint used by crossRef. Returns {match, score (0-100), tier, reason, flag}.
+// Flag is non-empty when the match passed all hard gates but had a soft mismatch worth
+// surfacing (e.g. VINTAGE_MISMATCH:2022vs2021).
+function matchCraftable(item,craftList){
+  const rawName=String(item.item_name||'');
+  const itemNorm=normalizeName(rawName);
+  const itemParsed=parseProduct(rawName);
+  // Step 1 — learned alias (user-resolved REVIEW from a prior session)
+  if(S.learnedAliases&&S.learnedAliases[itemNorm]){
+    const learned=S.learnedAliases[itemNorm];
+    const hit=craftList.find(cv=>normalizeName(cv.item_name)===learned&&normalize(cv.venue)===normalize(item.venue));
+    if(hit)return{match:hit,score:100,tier:'learned',reason:'Previously confirmed mapping',flag:''};
+  }
+  // Step 2 — ID (SKU) match within same venue
+  const candidates=craftList.filter(cv=>normalize(cv.venue)===normalize(item.venue));
+  if(item.sku){
+    const byId=candidates.find(cv=>(cv.sku||'').toString().trim()===(item.sku||'').toString().trim());
+    if(byId)return{match:byId,score:100,tier:'id',reason:'Matched by Bevager ID',flag:''};
+  }
+  // Step 3 — exact post-normalization equality (still subject to gates for sanity)
+  for(const cv of candidates){
+    if(normalizeName(cv.item_name)===itemNorm){
+      const cvParsed=parseProduct(cv.item_name);
+      const gate=gateParsedPair(itemParsed,cvParsed);
+      if(gate.ok){
+        return{match:cv,score:100,tier:'exact',reason:'Exact name match after normalization',flag:gate.flag||''};
+      }
+    }
+  }
+  // Step 4 — tiered fuzzy. Every candidate must clear the gate (size / varietal /
+  // designation / vintage) BEFORE its name score is considered.
+  let best=null,bestScore=0,bestFlag='';
+  for(const cv of candidates){
+    const cvParsed=parseProduct(cv.item_name);
+    const gate=gateParsedPair(itemParsed,cvParsed);
+    if(!gate.ok)continue; // hard gate — different size/varietal/designation/vintage-far
+    const itemNormNoSize=itemNorm.replace(SIZE_RE,'').trim();
+    const cvNormNoSize=normalizeName(cv.item_name).replace(SIZE_RE,'').trim();
+    const score=tokenSetRatio(itemNormNoSize,cvNormNoSize);
+    if(score>bestScore){bestScore=score;best=cv;bestFlag=gate.flag||''}
+  }
+  if(!best)return{match:null,score:0,tier:'none',reason:'No candidate cleared size/varietal/designation gates',flag:''};
+  if(bestScore>=95)return{match:best,score:bestScore,tier:'near',reason:`Near match — ${bestScore}% token similarity`,flag:bestFlag};
+  if(bestScore>=85)return{match:best,score:bestScore,tier:'low',reason:`Low confidence — ${bestScore}% token similarity`,flag:bestFlag};
+  return{match:best,score:bestScore,tier:'nomatch',reason:`Best candidate scored only ${bestScore}%`,flag:bestFlag};
+}
+
+function venueMatch(a,b){
+  if(!a||!b)return true;
+  const na=normalize(a),nb=normalize(b);
+  if(na===nb)return true;
+  // Strict substring check
+  const shorter=na.length<=nb.length?na:nb;
+  const longer=na.length>nb.length?na:nb;
+  if(longer.includes(shorter)&&shorter.length/longer.length>=0.5)return true;
+  // Word-level match — extract words (>1 char to keep "LA")
+  const wa=a.toLowerCase().replace(/[^a-z\s]/g,' ').split(/\s+/).filter(w=>w.length>1);
+  const wb=b.toLowerCase().replace(/[^a-z\s]/g,' ').split(/\s+/).filter(w=>w.length>1);
+  if(!wa.length||!wb.length)return false;
+  // Fuzzy single-char tolerance for typos (deliliah ↔ delilah)
+  function fuzzyEq(w1,w2){
+    if(w1===w2)return true;
+    if(Math.abs(w1.length-w2.length)>1)return false;
+    if(w1.length===w2.length){let d=0;for(let i=0;i<w1.length;i++)if(w1[i]!==w2[i])d++;return d<=1}
+    const s=w1.length<w2.length?w1:w2,l=w1.length>=w2.length?w1:w2;
+    let j=0,d=0;for(let i=0;i<l.length;i++){if(s[j]===l[i])j++;else d++;if(d>1)return false}return true;
+  }
+  // ALL words from shorter list must match something in longer list
+  const smallerArr=wa.length<=wb.length?wa:wb;
+  const largerArr=wa.length>wb.length?wa:wb;
+  for(const sw of smallerArr){
+    if(!largerArr.some(lw=>fuzzyEq(sw,lw)))return false;
+  }
+  return true;
+}
+
+// WoW lookup key — size matters, vintage does NOT (per R2 spec).
+function wowKey(rec){
+  const name=normalizeName(rec.item_name||'');
+  const vintage=extractVintage(name);
+  const nameNoVintage=vintage?name.replace(new RegExp('\\b'+vintage+'\\b','g'),'').replace(/\s+/g,' ').trim():name;
+  const size=extractSize(rec.item_name||'');
+  return `${normalize(rec.venue||'')}|${nameNoVintage}|${size.size_ml||0}`;
+}
+function getPriorWeekByKey(key){
+  if(!S.priorWeek||!Array.isArray(S.priorWeek.items))return null;
+  if(!S.priorWeek._indexByKey){
+    S.priorWeek._indexByKey={};
+    for(const p of S.priorWeek.items)S.priorWeek._indexByKey[wowKey(p)]=p;
+  }
+  return S.priorWeek._indexByKey[key]||null;
+}
+
+function crossRef(){
+  if(!S.craftData.length)return;
+  // Ensure every AVT record has item_id + a match-key cached.
+  for(const cv of S.craftData){
+    cv.item_id=cv.item_id||stableItemId(cv);
+  }
+  // Invalidate prior-week index in case user re-imported
+  if(S.priorWeek)S.priorWeek._indexByKey=null;
+
+  let ambiguousNoId=0; // for single top-of-run warning
+
+  // Step 1 — Slack-parsed items → Craftable
+  for(const item of S.items){
+    if(item.issue_type==='Craftable Variance')continue;
+
+    if(!isValidProductName(item.item_name)){
+      item.craftable_status='NOT IN CRAFTABLE';
+      item.resolved=false;
+      item.severity=scoreSev(item);item.recount=needsRC(item);
+      continue;
+    }
+
+    const result=matchCraftable(item,S.craftData);
+    const best=result.match;
+
+    if(best){
+      item.item_id=best.item_id||stableItemId(best);
+      // R3 Issue 1 — ONLY inherit variance from confident matches.
+      // Below 95 ("low" @ 85-94 or lower), leave the dollar columns null so
+      // unrelated items can never share a copied value. Surface the reason in
+      // variance_source so engineers can debug without counters seeing fake numbers.
+      const CONFIDENT_TIERS=new Set(['id','exact','learned','near']);
+      if(CONFIDENT_TIERS.has(result.tier)){
+        item.variance_dollars=best.variance_dollars;
+        item.variance_pct=best.variance_pct;
+        item.variance_qty=best.variance_qty||0;
+        item.actual_amount=best.actual_amount||0;
+        item.theo_amount=best.theo_amount||0;
+        item.cu_price=best.cu_price||0;
+        item.depletions=best.depletions||0;
+        item.waste=best.waste||0;
+        item.variance_source='computed';
+      }else{
+        // Low-confidence match: we have a candidate but can't trust the numbers.
+        // Null everything that could spuriously share a value with the candidate.
+        item.variance_dollars=null;
+        item.variance_pct=null;
+        item.variance_qty=null;
+        item.actual_amount=null;
+        item.theo_amount=null;
+        item.cu_price=null;
+        item.depletions=null;
+        item.waste=null;
+        item.variance_source=`null:low_confidence_${result.tier}_${result.score}`;
+      }
+      item.craftable_match=best.item_name;
+      item.match_score=result.score;
+      item.match_tier=result.tier;
+      item.match_flag=result.flag||''; // e.g. VINTAGE_MISMATCH:2022vs2021
+      if(result.tier==='id'||result.tier==='exact'||result.tier==='learned'){
+        item.craftable_status='Craftable';
+      }else if(result.tier==='near'){
+        item.craftable_status=`REVIEW — Near Match (${result.score}%)`;
+        if(!best.sku)ambiguousNoId++;
+      }else if(result.tier==='low'){
+        item.craftable_status=`REVIEW — Low Confidence (${result.score}%)`;
+      }else{
+        item.craftable_status='REVIEW — No Match';
+      }
+      item.category=best.category||item.category;
+
+      // R3.7 — recurring-name-only flag. No dollar values are pulled from prior week.
+      const wk=wowKey(best);
+      const wowPrior=getPriorWeekByKey(wk);
+      const wowTag=computeWowTag(best,wowPrior);
+      item.wow_tag=wowTag.tag;
+      item.prior_variance_dollars=null; // explicitly blank per live-platform rule
+      item.weeks_flagged=wowPrior?2:1; // binary: 1=new this week, 2=also appeared last week
+      item.repeat_status=wowTag.repeat_status;
+
+      // Resolution check
+      const wine=isWine(item);
+      const varThresh=wine?(S.threshWine||200):(S.threshLiquor||50);
+      const absVar=Math.abs(best.variance_dollars||0);
+      const absQty=Math.abs(best.variance_qty||0);
+      const pct=Math.abs(best.variance_pct||0);
+      if(absVar<varThresh&&absQty<(S.threshQtyUnits||1)&&pct<(S.threshPct||10)){
+        item.resolved=true;
+        item.resolved_status='RESOLVED — Variance cleared after recount';
+      }else{
+        item.resolved=false;
+      }
+    }else{
+      // R3 Issue 1 — no candidate found. Wipe any stale variance values from prior runs
+      // so a no-match row can NEVER carry last week's numbers forward disguised as current.
+      item.variance_dollars=null;
+      item.variance_pct=null;
+      item.variance_qty=null;
+      item.actual_amount=null;
+      item.theo_amount=null;
+      item.cu_price=null;
+      item.depletions=null;
+      item.waste=null;
+      item.variance_source='null:no_match';
+      item.match_score=0;
+      item.match_tier='none';
+      item.craftable_match='';
+      item.craftable_status=item.sku?'REVIEW — No Match':'REVIEW — No ID';
+      item.resolved=false;
+      item.wow_tag='';
+      item.prior_variance_dollars=null;
+    }
+
+    // Missing actual/theo override — only fires when we actually have a variance_dollars
+    // (null means we couldn't compute, not that it's zero).
+    if(item.variance_dollars!=null&&Math.abs(item.variance_dollars)>0&&(item.actual_amount||0)===0&&(item.theo_amount||0)===0){
+      item.craftable_status='REVIEW — Missing Actual/Theo';
+    }
+
+    item.severity=scoreSev(item);item.recount=item.resolved?false:needsRC(item);
+  }
+
+  // Step 2 — Add Craftable-only items. Key on canonical venue + normalized name.
+  const matchedByKey=new Set();
+  S.items.forEach(i=>{
+    if(i.craftable_match)matchedByKey.add(`${normalize(i.venue)}|${normalizeName(i.craftable_match)}`);
+  });
+  const now=new Date().toLocaleString(),wk=weekLabel();
+  let missingIdCount=0;
+  for(const cv of S.craftData){
+    const key=`${normalize(cv.venue)}|${normalizeName(cv.item_name)}`;
+    if(matchedByKey.has(key))continue;
+    const alreadyIn=S.items.some(i=>i.issue_type==='Craftable Variance'&&normalize(i.item_name)===normalize(cv.item_name)&&normalize(i.venue)===normalize(cv.venue));
+    if(alreadyIn)continue;
+    if(!cv.sku)missingIdCount++;
+    const wk2=wowKey(cv);
+    const wowPrior=getPriorWeekByKey(wk2);
+    const wowTag=computeWowTag(cv,wowPrior);
+    const obj={
+      venue:cv.venue,item_name:cv.item_name,sku:cv.sku||'',item_id:cv.item_id||stableItemId(cv),
+      issue_type:'Craftable Variance',sub_location:'',quantity:cv.variance_qty||0,notes:'',
+      variance_dollars:cv.variance_dollars,variance_pct:cv.variance_pct,variance_qty:cv.variance_qty||0,
+      actual_amount:cv.actual_amount||0,theo_amount:cv.theo_amount||0,cu_price:cv.cu_price||0,
+      depletions:cv.depletions||0,waste:cv.waste||0,
+      craftable_match:cv.item_name,match_score:100,match_tier:'exact',
+      variance_source:'computed', // R3 Issue 1 — Craftable-origin rows are always trustworthy
+      craftable_status:'Craftable',
+      weeks_flagged:wowPrior?2:1, // R3.7 — binary recurring flag, no multi-week accumulation
+      repeat_status:wowTag.repeat_status,wow_tag:wowTag.tag,
+      prior_variance_dollars:null, // R3.7 — no numeric data from prior week
+      still_active:true,severity:'',recount:false,resolved:false,
+      timestamp:now,week:wk,category:cv.category||'',
+      vintage:extractVintage(cv.item_name||'')
+    };
+    if(Math.abs(obj.variance_dollars||0)>0&&(obj.actual_amount||0)===0&&(obj.theo_amount||0)===0){
+      obj.craftable_status='REVIEW — Missing Actual/Theo';
+    }
+    obj.severity=scoreSev(obj);obj.recount=needsRC(obj);
+    S.items.push(obj);
+  }
+
+  // R2 Issue 3 — one consolidated warning, not per-row noise.
+  if(missingIdCount>0){
+    console.warn(`[inventory] ${missingIdCount} AVT rows matched by normalized name; Bevager ID column empty. Consider opening a Bevager ticket to populate ID on AVT exports.`);
+  }
+  if(ambiguousNoId>0){
+    console.warn(`[inventory] ${ambiguousNoId} near-matches (95-99%) would benefit from stable IDs to disambiguate.`);
+  }
+
+  S.items.sort((a,b)=>sevOrd(a.severity)-sevOrd(b.severity));sv();updateBadge();
+}
+
+// ═══════════════════════════════════════════════════
+//  WEEK-OVER-WEEK — prior-week snapshot & reconciliation tags (Bug 4 + Improvement F)
+// ═══════════════════════════════════════════════════
+function snapshotPriorWeek(){
+  if(!S.craftData.length)return;
+  S.priorWeek={
+    week:weekLabel(),
+    capturedAt:new Date().toISOString(),
+    avtGeneratedAt:S.avtGeneratedAt||null,
+    items:S.craftData.map(cv=>({
+      item_id:cv.item_id||stableItemId(cv),
+      venue:cv.venue,item_name:cv.item_name,sku:cv.sku||'',
+      variance_dollars:cv.variance_dollars||0,variance_pct:cv.variance_pct||0,variance_qty:cv.variance_qty||0,
+      actual_amount:cv.actual_amount||0,theo_amount:cv.theo_amount||0,
+      depletions:cv.depletions||0,waste:cv.waste||0,category:cv.category||'',
+      weeks_flagged:1
+    }))
+  };
+  sv();
+}
+function getPriorWeekRecord(itemId){
+  if(!S.priorWeek||!Array.isArray(S.priorWeek.items))return null;
+  return S.priorWeek.items.find(p=>p.item_id===itemId)||null;
+}
+// R3.7 — Live-platform rule. The only cross-week link is: did this name appear
+// last week? We never carry prior dollar/pct/qty values into this week's display.
+// Result: wow_tag ∈ {'', 'New', 'Recurring'}; repeat_status ∈ {'NEW', 'REPEATING'}.
+function computeWowTag(cv,prior){
+  if(!prior){return{tag:'New',repeat_status:'NEW'}}
+  return{tag:'Recurring',repeat_status:'REPEATING'};
+}
+
+// ═══════════════════════════════════════════════════
+//  COUNT PHASE — Count 1 vs Count 2
+// ═══════════════════════════════════════════════════
+function onCountPhaseChange(){
+  const phase=document.getElementById('countPhase').value;
+  const hint=document.getElementById('countHint');
+  const parseBtn=document.getElementById('parseBtn');
+  if(phase==='1'){
+    hint.innerHTML='<strong style="color:var(--accent)">Count 1:</strong> Pull Slack (auto-refreshes Craftable AVT) \u2192 Parse issues \u2192 Generate recount list';
+    parseBtn.textContent='Parse & Add Issues';
+  }else{
+    hint.innerHTML='<strong style="color:var(--success)">Count 2 (Final):</strong> Pull Slack (auto-refreshes AVT) \u2192 Parse \u2192 Cross-reference \u2192 Resolved auto-detected. <strong>No further recounts after this</strong> \u2014 remaining variances are final.';
+    parseBtn.textContent='Parse & Finalize';
+  }
+}
+
+async function runCount2PostProcess(venue,btn,res){
+  // Count 2 = the second (and last) physical count. After this, no more recounts —
+  // remaining variances are real (shrinkage, theft, receiving error), not count error.
+  btn.innerHTML='<span class="spin">⟳</span> Count 2: Pulling fresh Craftable AVT...';
+  await runCraftableBotPull(msg=>{btn.innerHTML=`<span class="spin">⟳</span> ${msg}`});
+  // importCSV (called inside the helper) re-runs crossRef, so resolved/unresolved are now current.
+
+  // Finalize: items have been counted twice. Strip recount flags so the final report
+  // shows zero recount items. count2_finalized makes future crossRef passes respect this.
+  S.items.forEach(i=>{
+    if(!venue||normalize(i.venue)===normalize(normalizeVenue(venue))){
+      i.count2_finalized=true;
+      i.recount=false;
+    }
+  });
+  sv();
+  updateBadge();
+  if(typeof renderData==='function')renderData();
+
+  const scope=S.items.filter(i=>!venue||normalize(i.venue)===normalize(normalizeVenue(venue)));
+  const resolved=scope.filter(i=>i.resolved);
+  const finalVar=scope.filter(i=>!i.resolved&&Math.abs(i.variance_dollars||0)>0);
+
+  const existingHtml=res.innerHTML;
+  res.innerHTML=existingHtml+`<div style="margin-top:12px;padding:10px;background:rgba(45,106,79,0.15);border:1px solid rgba(45,106,79,0.3);border-radius:6px"><strong style="color:var(--success)">✓ Count 2 Final:</strong> ${resolved.length} item(s) RESOLVED. ${finalVar.length} remain as final variances — no further recounts (investigate cause: receiving, theft, shrinkage).</div>`;
+}
+// ═══════════════════════════════════════════════════
+//  PARSE HANDLER
+// ═══════════════════════════════════════════════════
+async function handleParse(){
+  const venue=document.getElementById('locSel').value,msg=document.getElementById('msgIn').value;
+  const btn=document.getElementById('parseBtn'),res=document.getElementById('parseRes');
+  const hasText=msg&&msg.trim();
+  const hasImages=pendingImages.length>0;
+  if(!venue){showRes(res,false,'Select a venue.');return}
+  if(!hasText&&!hasImages){showRes(res,false,'Paste messages or add images.');return}
+  if(!S.githubPat){showRes(res,false,'Add your GitHub token in Settings.');return}
+  btn.disabled=true;
+  res.style.display='none';
+
+  const totalImages=pendingImages.length;
+  const IMG_BATCH=5; // Conservative batch size to stay under rate limits
+  const BATCH_DELAY=15000; // 15s between batches to respect 60k tokens/min
+  let failedBatches=0;
+
+  // Helper: call parseWithAI with auto-retry on 429, graceful failure
+  async function callWithRetry(text,venue,images,label){
+    for(let attempt=0;attempt<3;attempt++){
+      try{
+        const result=await parseWithAI(text,venue,images);
+        return result||[];
+      }catch(e){
+        if(e.message.includes('429')&&attempt<2){
+          const wait=attempt===0?15:30;
+          btn.innerHTML=`<span class="spin">⟳</span> Rate limited — waiting ${wait}s then retrying ${label}...`;
+          await new Promise(r=>setTimeout(r,wait*1000));
+        }else if(attempt<2&&(e.message.includes('Failed to fetch')||e.message.includes('NetworkError')||e.message.includes('timeout'))){
+          btn.innerHTML=`<span class="spin">⟳</span> Network error — retrying ${label} in 5s...`;
+          await new Promise(r=>setTimeout(r,5000));
+        }else{
+          console.warn(`Batch ${label} failed after ${attempt+1} attempts:`,e.message);
+          failedBatches++;
+          return[]; // Return empty instead of crashing
+        }
+      }
+    }
+    return[];
+  }
+
+  try{
+    let allIssues=[];
+
+    if(hasText||hasImages){
+      // Always parse text separately from images for reliability
+      if(hasText){
+        btn.innerHTML=`<span class="spin">⟳</span> Parsing text...`;
+        const textIssues=await callWithRetry(msg,venue,null,'text');
+        allIssues.push(...(textIssues||[]));
+      }
+
+      if(hasImages){
+        const batches=[];
+        for(let i=0;i<totalImages;i+=IMG_BATCH){
+          batches.push(pendingImages.slice(i,i+IMG_BATCH));
+        }
+        for(let b=0;b<batches.length;b++){
+          // Wait between batches (and after text parse) to avoid rate limits
+          if(b>0||hasText){
+            const waitSec=Math.ceil(BATCH_DELAY/1000);
+            for(let s=waitSec;s>0;s--){
+              btn.innerHTML=`<span class="spin">⟳</span> Waiting ${s}s before image batch ${b+1}/${batches.length}...`;
+              await new Promise(r=>setTimeout(r,1000));
+            }
+          }
+          btn.innerHTML=`<span class="spin">⟳</span> Reading images ${b*IMG_BATCH+1}-${Math.min((b+1)*IMG_BATCH,totalImages)} of ${totalImages}...`;
+          const imgIssues=await callWithRetry('',venue,batches[b],`batch ${b+1}`);
+          allIssues.push(...(imgIssues||[]));
+        }
+      }
+    }
+
+    // Deduplicate by normalized item_name
+    const seen=new Map();
+    for(const iss of allIssues){
+      const key=normalize(iss.item_name);
+      if(!seen.has(key)){seen.set(key,iss)}
+      else{
+        // Merge: keep the one with more info
+        const existing=seen.get(key);
+        if(!existing.location&&iss.location)existing.location=iss.location;
+        if(!existing.quantity&&iss.quantity)existing.quantity=iss.quantity;
+        if(!existing.notes&&iss.notes)existing.notes=iss.notes;
+      }
+    }
+    const issues=[...seen.values()];
+
+    if(!issues.length){showRes(res,false,failedBatches>0?`No issues found (${failedBatches} batch${failedBatches>1?'es':''} failed — try again with fewer images).`:'No issues found.');return}
+    const now=new Date().toLocaleString(),wk=weekLabel();
+    const canonVenue=normalizeVenue(venue);
+    for(const iss of issues){
+      const key=`${normalize(canonVenue)}|${normalize(iss.item_name)}`;
+      const idx=S.items.findIndex(i=>`${normalize(i.venue)}|${normalize(i.item_name)}`===key);
+      const obj={venue:canonVenue,item_name:iss.item_name,sku:iss.sku||'',item_id:stableItemId({venue:canonVenue,item_name:iss.item_name,sku:iss.sku||''}),issue_type:iss.issue_type||'',sub_location:iss.location||'',quantity:iss.quantity||0,notes:iss.notes||'',variance_dollars:0,variance_pct:0,craftable_match:'',craftable_status:'',weeks_flagged:1,repeat_status:'NEW',still_active:true,severity:'',recount:false,timestamp:now,week:wk,category:''};
+      if(idx>=0){const old=S.items[idx];obj.weeks_flagged=(old.weeks_flagged||1)+1;obj.variance_dollars=old.variance_dollars||0;obj.variance_pct=old.variance_pct||0;obj.craftable_match=old.craftable_match||'';obj.craftable_status=old.craftable_status||'';obj.category=old.category||'';obj.repeat_status=obj.weeks_flagged>=15?'CHRONIC (15+)':obj.weeks_flagged>=10?'PERSISTENT (10-14)':obj.weeks_flagged>=5?'RECURRING (5-9)':obj.weeks_flagged>=2?'REPEATING (2-4)':'NEW';S.items[idx]=obj}else{S.items.push(obj)}
+    }
+    crossRef();
+    const warnTxt=failedBatches>0?` <span style="color:var(--watch)">(${failedBatches} batch${failedBatches>1?'es':''} had errors — some images may not have been read)</span>`:'';
+    let html=`&#10003; ${issues.length} item(s) for ${esc(venue)}${hasImages?' (from text'+(totalImages?' + '+totalImages+' images':'')+')':''}${warnTxt}<div class="issue-cards">`;
+    issues.forEach(i=>{const f=S.items.find(x=>normalize(x.venue)===normalize(venue)&&normalize(x.item_name)===normalize(i.item_name));html+=`<div class="ic"><div><div class="nm">${esc(i.item_name)}</div><div class="mt">${esc(i.issue_type||'')} ${i.quantity?'· '+i.quantity+' btl':''}${i.location?' · '+esc(i.location):''}</div></div><span class="sev sev-${f?f.severity:'LOW'}">${f?f.severity:'LOW'}</span></div>`});
+    html+='</div>';showRes(res,true,html);
+    document.getElementById('msgIn').value='';
+    pendingImages=[];renderImagePreviews();
+
+    // Count 2: auto-pull fresh Craftable and cross-reference for resolution detection
+    const phase=document.getElementById('countPhase').value;
+    if(phase==='2'){
+      await runCount2PostProcess(venue,btn,res);
+    }
+  }catch(e){showRes(res,false,'Error: '+e.message)}
+  finally{
+    btn.disabled=false;
+    const phase=document.getElementById('countPhase').value;
+    btn.textContent=phase==='2'?'Parse & Finalize':'Parse & Add Issues';
+  }
+}
+
+function showRes(el,ok,html){el.className='result '+(ok?'ok':'err');el.innerHTML=html;el.style.display='block'}
+
+// ═══════════════════════════════════════════════════
+//  CROSS-REF TABLE
+// ═══════════════════════════════════════════════════
+function renderXRef(){
+  const c=document.getElementById('xrefTbl');
+  if(!S.craftData.length&&!S.items.length){c.innerHTML='<div class="empty"><span class="ico">&#128202;</span>No data. Pull from Craftable or import CSV.</div>';return}
+  const rows=[];
+  for(const cv of S.craftData){
+    const m=S.items.find(i=>venueMatch(i.venue,cv.venue)&&(normalize(i.item_name)===normalize(cv.item_name)||normalize(i.craftable_match)===normalize(cv.item_name)));
+    rows.push({venue:cv.venue,product:cv.item_name,actual:cv.actual_amount||0,theo:cv.theo_amount||0,vd:cv.variance_dollars,vp:cv.variance_pct,cat:cv.category,issue:m?m.issue_type:'',wks:m?m.weeks_flagged:0,sev:m?m.severity:(Math.abs(cv.variance_dollars)>=500?'HIGH':Math.abs(cv.variance_dollars)>=200?'MEDIUM':'LOW'),rc:m?m.recount:Math.abs(cv.variance_dollars)>=S.threshD})}
+  let html='<div class="tbl-wrap"><table><thead><tr>';
+  ['Store','Product','Actual $','Theo $','Variance $','Var %','Category','Issue','Wks','Severity','Recount?'].forEach(h=>html+=`<th>${h}</th>`);
+  html+='</tr></thead><tbody>';
+  if(!rows.length)html+='<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--muted)">No data</td></tr>';
+  rows.forEach(r=>{const vc=r.vd<0?'vn':r.vd>0?'vp':'';html+=`<tr><td>${esc(r.venue)}</td><td>${esc(r.product)}</td><td class="num">${r.actual?fD(r.actual):'—'}</td><td class="num">${r.theo?fD(r.theo):'—'}</td><td class="num ${vc}">${fD(r.vd)}</td><td class="num">${r.vp?r.vp.toFixed(1)+'%':'—'}</td><td style="font-size:10px">${esc(r.cat)}</td><td style="font-size:10px">${esc(r.issue)}</td><td class="num">${r.wks||'—'}</td><td><span class="sev sev-${r.sev}">${r.sev}</span></td><td>${r.rc?'<span class="recount-flag">RECOUNT</span>':'<span class="no-rc">—</span>'}</td></tr>`});
+  html+='</tbody></table></div>';c.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════
+//  RECOUNT TABLE
+// ═══════════════════════════════════════════════════
+let sC=-1,sA=true;
+// Items with these statuses are "live issues" — surface to the top of the main tab (Improvement G).
+function isLiveIssue(i){
+  const s=i.craftable_status||'';
+  return s==='NOT IN CRAFTABLE'||s.startsWith('REVIEW')||s==='Craftable Only — No ID';
+}
+
+function renderData(){
+  const fv=document.getElementById('fVen').value,fs=document.getElementById('fSev').value,fr=document.getElementById('fRc').value;
+  let data=S.items.filter(i=>{if(fv&&normalize(i.venue)!==normalize(normalizeVenue(fv)))return false;if(fs&&i.severity!==fs)return false;if(fr==='yes'&&!i.recount)return false;if(fr==='no'&&i.recount)return false;return true});
+  // Live-issue priority sort: unresolved live issues first (by absolute variance desc), then everything else by current order.
+  if(sC<0){
+    data.sort((a,b)=>{
+      const la=isLiveIssue(a)&&!a.resolved?1:0,lb=isLiveIssue(b)&&!b.resolved?1:0;
+      if(la!==lb)return lb-la;
+      const sa=sevOrd(a.severity),sb=sevOrd(b.severity);
+      if(sa!==sb)return sa-sb;
+      return Math.abs(b.variance_dollars||0)-Math.abs(a.variance_dollars||0);
+    });
+  }
+  const liveCount=data.filter(i=>isLiveIssue(i)&&!i.resolved).length;
+  const tot=data.length,rc=data.filter(i=>i.recount).length,cr=data.filter(i=>i.severity==='CRITICAL').length,tv=data.reduce((s,i)=>s+Math.abs(i.variance_dollars||0),0);
+  document.getElementById('statsBar').innerHTML=`<div class="stat"><div class="n">${tot}</div><div class="l">Total</div></div><div class="stat"><div class="n" style="color:var(--critical)">${rc}</div><div class="l">Recount</div></div><div class="stat"><div class="n" style="color:var(--critical)">${cr}</div><div class="l">Critical</div></div><div class="stat"><div class="n" style="color:#f59e0b">${liveCount}</div><div class="l">Live Issues</div></div><div class="stat"><div class="n">${fD(tv)}</div><div class="l">Variance</div></div>`;
+  const c=document.getElementById('dataTbl');
+  // R3.7 — when no fresh AVT is loaded, surface the "awaiting" state prominently instead
+  // of showing $0 / blank rows as if they were current data.
+  const awaitingBanner=(!S.craftData||!S.craftData.length)?`<div style="margin-bottom:10px;padding:10px 14px;background:rgba(245,158,11,0.15);border-left:3px solid #f59e0b;border-radius:4px;font-size:12px"><strong>Awaiting this week's AVT</strong> — no variance data is shown until you import the current Craftable AVT (Craftable tab → Import). Persisted numbers from prior imports are intentionally wiped on each page load.</div>`:'';
+  if(!data.length){c.innerHTML=awaitingBanner+'<div class="empty"><span class="ico">&#128203;</span>No items match filters.</div>';return}
+  const cols=[{k:'venue',l:'Venue'},{k:'item_name',l:'Product'},{k:'issue_type',l:'Issue'},{k:'sub_location',l:'Location'},{k:'actual_amount',l:'Actual',n:1},{k:'theo_amount',l:'Theo',n:1},{k:'quantity',l:'Var Qty',n:1},{k:'variance_dollars',l:'Var $',n:1},{k:'severity',l:'Severity'},{k:'recount',l:'Recount?'}];
+  let html='<div class="tbl-wrap"><table><thead><tr>';
+  cols.forEach((c,i)=>html+=`<th onclick="sortBy(${i})" class="${sC===i?'sorted':''}">${c.l}<span class="sa">${sC===i?(sA?'▲':'▼'):'↕'}</span></th>`);
+  html+='</tr></thead><tbody>';
+  data.forEach(item=>{
+    const vc=item.variance_dollars<0?'vn':item.variance_dollars>0?'vp':'';
+    const isSlack=item.issue_type!=='Craftable Variance';
+    const live=isLiveIssue(item)&&!item.resolved;
+    const srcTag=isSlack?'<span style="background:#f59e0b;color:#000;font-size:8px;padding:1px 5px;border-radius:3px;font-weight:700;margin-right:4px">⚡ Initiatecare</span>':'';
+    const liveTag=live?'<span style="background:#dc2626;color:#fff;font-size:8px;padding:1px 5px;border-radius:3px;font-weight:700;margin-right:4px">LIVE</span>':'';
+    const rcCell=item.resolved?'<span style="background:#2d6a4f;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px">✓ RESOLVED</span>':item.recount?'<span class="recount-flag">RECOUNT</span>':'<span class="no-rc">—</span>';
+    const rowStyle=live?' style="background:rgba(220,38,38,0.08);border-left:3px solid #dc2626"':(isSlack?' style="background:rgba(245,158,11,0.08)"':'')+(item.resolved?' style="opacity:0.6"':'');
+    html+=`<tr${rowStyle}><td>${esc(item.venue)}</td><td>${liveTag}${srcTag}<strong>${esc(item.item_name)}</strong>${item.craftable_status?`<div style="font-size:9px;color:var(--text-muted);margin-top:1px">${esc(item.craftable_status)}</div>`:''}</td><td style="font-size:10px">${esc(item.issue_type)}</td><td style="font-size:10px">${esc(item.sub_location)}</td><td class="num">${item.actual_amount?Number(item.actual_amount).toFixed(1):'—'}</td><td class="num">${item.theo_amount?Number(item.theo_amount).toFixed(1):'—'}</td><td class="num">${item.quantity||'—'}</td><td class="num ${vc}">${item.variance_dollars?fD(item.variance_dollars):'—'}</td><td><span class="sev sev-${item.severity}">${item.severity}</span></td><td>${rcCell}</td></tr>`;
+  });
+  html+='</tbody></table></div>';c.innerHTML=awaitingBanner+html;
+}
+function sortBy(ci){if(sC===ci)sA=!sA;else{sC=ci;sA=true}const ks=['venue','item_name','issue_type','sub_location','actual_amount','theo_amount','quantity','variance_dollars','severity','recount'];const k=ks[ci];S.items.sort((a,b)=>{let va=a[k],vb=b[k];if(k==='severity'){va=sevOrd(va);vb=sevOrd(vb)}if(typeof va==='number'&&typeof vb==='number')return sA?va-vb:vb-va;va=String(va||'').toLowerCase();vb=String(vb||'').toLowerCase();return sA?va.localeCompare(vb):vb.localeCompare(va)});sv();renderData()}
+
+// ═══════════════════════════════════════════════════
+//  CSV EXPORT
+// ═══════════════════════════════════════════════════
+function exportCSV(type){
+  const fv=document.getElementById('fVen').value;
+
+  // Build combined dataset: parsed items + Craftable-only items
+  let data=[...S.items];
+
+  // Add Craftable-only variance items that aren't already in S.items.
+  // Keyed on canonical venue + normalized name to avoid the cross-venue leak.
+  for(const cv of S.craftData){
+    const alreadyIn=S.items.some(i=>normalize(i.venue)===normalize(cv.venue)&&(
+      normalize(i.item_name)===normalize(cv.item_name)||normalize(i.craftable_match)===normalize(cv.item_name)
+    ));
+    if(!alreadyIn){
+      const varAbs=Math.abs(cv.variance_dollars||0);
+      const sev=varAbs>=500?'HIGH':varAbs>=200?'MEDIUM':varAbs>=100?'WATCH':'LOW';
+      const rc=sev==='HIGH'||sev==='MEDIUM'||(sev==='WATCH'&&varAbs>=S.threshD);
+      data.push({
+        venue:cv.venue,item_name:cv.item_name,sku:cv.sku||'',item_id:cv.item_id||stableItemId(cv),issue_type:'Craftable Variance',
+        sub_location:'',quantity:cv.variance_qty||0,notes:`Actual: ${cv.actual_amount}, Theo: ${cv.theo_amount}`,
+        variance_dollars:cv.variance_dollars,variance_pct:cv.variance_pct,variance_qty:cv.variance_qty||0,
+        actual_amount:cv.actual_amount||0,theo_amount:cv.theo_amount||0,cu_price:cv.cu_price||0,
+        depletions:cv.depletions||0,waste:cv.waste||0,
+        craftable_match:cv.item_name,craftable_status:cv.sku?'Craftable Only':'Craftable Only — No ID',
+        weeks_flagged:0,repeat_status:'',still_active:true,severity:sev,recount:rc,
+        timestamp:new Date().toLocaleString(),week:weekLabel(),category:cv.category
+      });
+    }
+  }
+
+  if(fv){const fvCanon=normalizeVenue(fv);data=data.filter(i=>normalize(i.venue)===normalize(fvCanon))}
+  if(type==='recount')data=data.filter(i=>i.recount);
+
+  // Sort: CRITICAL first
+  data.sort((a,b)=>sevOrd(a.severity)-sevOrd(b.severity));
+
+  if(!data.length){toast('No recount items found. Try lowering the Min Variance threshold.');return}
+  let hdrs,fn;
+  if(type==='recount'){
+    hdrs=['Store','Source','Product','SKU','Issue Type','Location','Actual Qty','Theo Qty','Qty Variance','Unit Price','Variance ($)','Variance %','Depletions','Waste','Category','Severity','Resolved?','Craftable Status','Notes','Action Required'];
+    fn=i=>{
+      const src=i.issue_type==='Craftable Variance'?'CRAFTABLE':'⚡ Initiatecare';
+      return[i.venue,src,i.item_name,i.sku||'',i.issue_type||'Variance',i.sub_location||'',
+      i.actual_amount||'',i.theo_amount||'',i.quantity||'',
+      i.cu_price?'$'+Number(i.cu_price).toFixed(2):'',
+      i.variance_dollars?'$'+Number(i.variance_dollars).toFixed(2):'',
+      i.variance_pct?Number(i.variance_pct).toFixed(1)+'%':'',
+      i.depletions||0,i.waste||0,
+      i.category||'',i.severity,i.resolved?'YES — Resolved':'NO',i.craftable_status||'',i.notes||'',
+      i.resolved?'RESOLVED — Variance cleared after recount':'RECOUNT — Verify physical count vs Craftable'];
+    };
+  }else{
+    hdrs=['Store','Source','Product','SKU','Item ID','Issue Type','Location','Actual Qty','Theo Qty','Qty Variance','Unit Price','Variance ($)','Variance %','Variance Source','Match Score','Match Tier','Match Flag','Depletions','Waste','Category','Weeks Flagged','Repeat Status','WoW Tag','Prior Variance ($)','Severity','Recount?','Resolved?','Craftable Match','Craftable Status','Notes','Week','Timestamp'];
+    fn=i=>{
+      const src=i.issue_type==='Craftable Variance'?'CRAFTABLE':'⚡ Initiatecare';
+      // Null-safe renderers — null means "couldn't compute", NOT "zero".
+      const dol=(v)=>v==null?'':'$'+Number(v).toFixed(2);
+      const pct=(v)=>v==null?'':Number(v).toFixed(1)+'%';
+      const num=(v)=>v==null?'':v;
+      return[i.venue,src,i.item_name,i.sku||'',i.item_id||'',i.issue_type||'',i.sub_location||'',
+      num(i.actual_amount),num(i.theo_amount),num(i.quantity),
+      dol(i.cu_price),
+      dol(i.variance_dollars),pct(i.variance_pct),
+      i.variance_source||'',i.match_score!=null?i.match_score:'',i.match_tier||'',i.match_flag||'',
+      num(i.depletions),num(i.waste),
+      i.category||'',i.weeks_flagged||'',i.repeat_status||'',i.wow_tag||'',
+      dol(i.prior_variance_dollars),
+      i.severity,i.recount?'YES':'NO',
+      i.resolved?'YES — Resolved':'NO',
+      i.craftable_match||'',i.craftable_status||'',i.notes||'',i.week||'',i.timestamp||''];
+    };
+  }
+  let csv='\uFEFF'+hdrs.map(h=>`"${h}"`).join(',')+'\n';
+  // Preface with metadata before rows so every downstream reader knows which AVT pull this is from.
+  let meta='';
+  meta+=`"# Report generated","${new Date().toISOString()}"\n`;
+  meta+=`"# AVT generated","${S.avtGeneratedAt||'(not in file — ask Bevager to stamp exports)'}"\n`;
+  meta+=`"# AVT imported at","${S.lastPull||''}"\n`;
+  meta+=`"# Week","${weekLabel()}"\n`;
+  meta+=`"# Venue filter","${fv||'(all)'}"\n`;
+  meta+=`"# Threshold — liquor $","${S.threshLiquor}"\n`;
+  meta+=`"# Threshold — wine $","${S.threshWine}"\n`;
+  meta+=`"# Threshold — qty units","${S.threshQtyUnits}"\n`;
+  meta+=`"# Threshold — variance %","${S.threshPct}%"\n\n`;
+  // Rebuild cleanly with BOM + metadata + header + rows
+  let csvBody='';
+  csvBody+=hdrs.map(h=>`"${h}"`).join(',')+'\n';
+  // Preserve numeric 0 (waste/depletions) — coerce only null/undefined to empty.
+  data.forEach(i=>{csvBody+=fn(i).map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')+'\n'});
+  csv='﻿'+meta+csvBody;
+  if(type==='recount'){
+    csv+='\n"SUMMARY"\n';
+    csv+=`"Total recount items:","${data.length}"\n`;
+    csv+=`"Critical:","${data.filter(i=>i.severity==='CRITICAL').length}"\n`;
+    csv+=`"High:","${data.filter(i=>i.severity==='HIGH').length}"\n`;
+    csv+=`"Medium:","${data.filter(i=>i.severity==='MEDIUM').length}"\n`;
+    csv+=`"Total variance:","$${data.reduce((s,i)=>s+Math.abs(i.variance_dollars||0),0).toFixed(2)}"\n`;
+    csv+=`"Total waste logged:","${data.reduce((s,i)=>s+(i.waste||0),0).toFixed(2)}"\n`;
+    csv+=`"Total depletions:","${data.reduce((s,i)=>s+(i.depletions||0),0).toFixed(2)}"\n`;
+    csv+=`"Generated:","${new Date().toLocaleString()}"\n`;
+    csv+='\n"BY STORE"\n';
+    [...new Set(data.map(i=>i.venue))].forEach(v=>{const vi=data.filter(i=>i.venue===v);csv+=`"${v}","${vi.length} items","$${vi.reduce((s,i)=>s+Math.abs(i.variance_dollars||0),0).toFixed(2)}"\n`});
+  }
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=type==='recount'?`RECOUNT_${weekLabel().replace(/\s/g,'_')}.csv`:`inventory_full_${weekLabel().replace(/\s/g,'_')}.csv`;a.click();URL.revokeObjectURL(url);
+  toast(type==='recount'?'Recount CSV downloaded':'Full CSV downloaded');
+}
+
+// ═══════════════════════════════════════════════════
+//  COUNTER-SHEET REFRESH — overlay this-week variance on last-week flagged items (Bug 4)
+// ═══════════════════════════════════════════════════
+function exportCounterRefresh(){
+  if(!S.priorWeek||!Array.isArray(S.priorWeek.items)||!S.priorWeek.items.length){
+    toast('No prior-week snapshot yet. Import a prior-week CSV first or re-import next week.');return;
+  }
+  const fv=document.getElementById('fVen').value;
+  const currentByKey=new Map();
+  S.craftData.forEach(cv=>currentByKey.set(wowKey(cv),cv));
+  const rows=S.priorWeek.items
+    .filter(p=>!fv||normalize(p.venue)===normalize(normalizeVenue(fv)))
+    .map(p=>{
+      const cur=currentByKey.get(wowKey(p));
+      const priorAbs=Math.abs(p.variance_dollars||0);
+      const curVar=cur?(cur.variance_dollars||0):null;
+      const curAbs=curVar==null?null:Math.abs(curVar);
+      const delta=curAbs==null?null:(curAbs-priorAbs);
+      const status=cur==null?'DROPPED (no longer in AVT)':curAbs<priorAbs*0.5?'IMPROVED':curAbs>priorAbs*1.1?'WORSENED':'PERSISTING';
+      return{p,cur,curVar,curAbs,delta,status};
+    });
+  if(!rows.length){toast('No rows for that filter.');return}
+  const hdrs=['Store','Product','SKU','Item ID','Category','Prior Variance ($)','Prior Variance %','Prior Actual','Prior Theo','Updated Variance ($)','Updated Variance %','Updated Actual','Updated Theo','Updated Waste','Updated Depletions','Delta |Variance $|','Status'];
+  let csv='﻿';
+  csv+=`"# Counter-sheet refresh","${new Date().toISOString()}"\n`;
+  csv+=`"# Prior week","${S.priorWeek.week||''}"\n`;
+  csv+=`"# Prior AVT generated","${S.priorWeek.avtGeneratedAt||'(unknown)'}"\n`;
+  csv+=`"# Current AVT generated","${S.avtGeneratedAt||'(unknown)'}"\n\n`;
+  csv+=hdrs.map(h=>`"${h}"`).join(',')+'\n';
+  rows.forEach(r=>{
+    const line=[r.p.venue,r.p.item_name,r.p.sku,r.p.item_id||'',r.p.category||'',
+      r.p.variance_dollars?'$'+Number(r.p.variance_dollars).toFixed(2):'',
+      r.p.variance_pct?Number(r.p.variance_pct).toFixed(1)+'%':'',
+      r.p.actual_amount||0,r.p.theo_amount||0,
+      r.curVar==null?'—':'$'+r.curVar.toFixed(2),
+      r.cur&&r.cur.variance_pct!=null?Number(r.cur.variance_pct).toFixed(1)+'%':'—',
+      r.cur?r.cur.actual_amount:'—',r.cur?r.cur.theo_amount:'—',
+      r.cur?(r.cur.waste==null?'—':r.cur.waste):'—',
+      r.cur?(r.cur.depletions==null?'—':r.cur.depletions):'—',
+      r.delta==null?'—':'$'+r.delta.toFixed(2),r.status];
+    csv+=line.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')+'\n';
+  });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`counter_refresh_${weekLabel().replace(/\s/g,'_')}.csv`;a.click();URL.revokeObjectURL(url);
+  toast('Counter-sheet refresh CSV downloaded');
+}
+
+// ═══════════════════════════════════════════════════
+//  PRIOR-WEEK CSV IMPORT (R2 Issue 2) — reload last week's output as this week's snapshot
+// ═══════════════════════════════════════════════════
+function importPriorWeekCSV(ev){
+  const file=ev.target.files[0];if(!file)return;
+  ev.target.value='';
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    try{
+      const text=e.target.result;
+      // Parse, skipping metadata lines that start with "# ..."
+      const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+      // Find header row (first row starting with "Store" or containing "Product")
+      let headerIdx=-1;
+      let week='',avtGen='';
+      for(let i=0;i<lines.length;i++){
+        const low=lines[i].toLowerCase();
+        if(low.includes('"# week"')){const m=lines[i].match(/","(.*)"/);if(m)week=m[1]}
+        if(low.includes('"# avt generated"')){const m=lines[i].match(/","(.*)"/);if(m)avtGen=m[1]}
+        if(/^"?store"?/i.test(lines[i])&&lines[i].toLowerCase().includes('product')){headerIdx=i;break}
+      }
+      if(headerIdx<0){toast('Could not find header row in prior-week CSV — expected "Store,...,Product,...".');return}
+      const hdrs=csvLine(lines[headerIdx]).map(h=>h.toLowerCase().trim());
+      const col=(keys)=>hdrs.findIndex(h=>keys.some(k=>h.includes(k)));
+      const ci={
+        store:col(['store']),
+        product:col(['product']),
+        sku:col(['sku']),
+        item_id:col(['item id']),
+        vDol:col(['variance ($)','variance $','variance dollars']),
+        vPct:col(['variance %','variance pct']),
+        vQty:col(['qty variance','variance qty']),
+        actual:col(['actual qty','actual amount','actual']),
+        theo:col(['theo qty','theo amount','theo']),
+        category:col(['category']),
+        weeks:col(['weeks flagged']),
+        depl:col(['depletion']),
+        waste:col(['waste']),
+      };
+      if(ci.store<0||ci.product<0){toast('Header mismatch. Need Store and Product columns.');return}
+      const num=(s)=>{const m=String(s||'').replace(/[$,%]/g,'');const n=parseFloat(m);return isNaN(n)?0:n};
+      const items=[];
+      for(let i=headerIdx+1;i<lines.length;i++){
+        if(/^"?summary"?/i.test(lines[i])||/^"?by\s+store"?/i.test(lines[i]))break;
+        const c=csvLine(lines[i]);
+        if(!c[ci.product])continue;
+        const venue=normalizeVenue(String(c[ci.store]||'').trim());
+        const rec={
+          venue,
+          item_name:String(c[ci.product]||'').trim(),
+          sku:ci.sku>=0?String(c[ci.sku]||'').trim():'',
+          item_id:ci.item_id>=0?String(c[ci.item_id]||'').trim():'',
+          variance_dollars:ci.vDol>=0?num(c[ci.vDol]):0,
+          variance_pct:ci.vPct>=0?num(c[ci.vPct]):0,
+          variance_qty:ci.vQty>=0?num(c[ci.vQty]):0,
+          actual_amount:ci.actual>=0?num(c[ci.actual]):0,
+          theo_amount:ci.theo>=0?num(c[ci.theo]):0,
+          category:ci.category>=0?String(c[ci.category]||'').trim():'',
+          depletions:ci.depl>=0?num(c[ci.depl]):0,
+          waste:ci.waste>=0?num(c[ci.waste]):0,
+          weeks_flagged:ci.weeks>=0?Math.max(1,num(c[ci.weeks])):1,
+        };
+        if(!rec.item_id)rec.item_id=stableItemId(rec);
+        items.push(rec);
+      }
+      if(!items.length){toast('No rows parsed from prior-week CSV.');return}
+      S.priorWeek={week:week||'Prior',capturedAt:new Date().toISOString(),avtGeneratedAt:avtGen||null,items,_indexByKey:null};
+      sv();
+      // Re-run crossRef so WoW tags populate on current items
+      crossRef();renderData();renderInitiate();updateBadge();
+      toast(`Loaded ${items.length} prior-week rows${week?' ('+week+')':''}. WoW tags recomputed.`);
+    }catch(err){toast('Import error: '+err.message)}
+  };
+  reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════════════════
+//  MASTER INVENTORY LIST
+// ═══════════════════════════════════════════════════
+const INV_KEY='hwood_inventory';
+let masterInventory=[];
+
+function loadInventory(){
+  try{const d=localStorage.getItem(INV_KEY);if(d)masterInventory=JSON.parse(d)}catch(e){}
+}
+function saveInventory(){
+  try{localStorage.setItem(INV_KEY,JSON.stringify(masterInventory))}catch(e){}
+}
+
+function importInventory(ev){
+  const file=ev.target.files[0];if(!file)return;
+  ev.target.value='';
+  const res=document.getElementById('invRes');
+
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='csv'){
+    const reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        const lines=e.target.result.split('\n').map(l=>l.trim()).filter(l=>l);
+        if(!lines.length){showInvRes(false,'Empty file');return}
+        // Find the column with product names
+        const header=csvLine(lines[0]).map(h=>h.trim().toUpperCase());
+        const nameCol=header.findIndex(h=>h.includes('ITEM')||h.includes('PRODUCT')||h.includes('NAME'));
+        const catCol=header.findIndex(h=>h.includes('CATEGORY')||h.includes('CAT'));
+        const storeCol=header.findIndex(h=>h.includes('STORE')||h.includes('LOCATION'));
+        if(nameCol<0){showInvRes(false,'No ITEM/PRODUCT/NAME column found in header: '+header.join(', '));return}
+        masterInventory=[];
+        for(let i=1;i<lines.length;i++){
+          const cols=csvLine(lines[i]);
+          const name=(cols[nameCol]||'').trim();
+          if(name.length>2){
+            masterInventory.push({
+              name,
+              category:catCol>=0?(cols[catCol]||'').trim():'',
+              store:storeCol>=0?(cols[storeCol]||'').trim():'',
+            });
+          }
+        }
+        saveInventory();renderInventory();
+        showInvRes(true,`Imported ${masterInventory.length} products from CSV`);
+      }catch(err){showInvRes(false,'Error: '+err.message)}
+    };
+    reader.readAsText(file);
+  }else{
+    // XLSX
+    const reader=new FileReader();
+    reader.onload=async function(e){
+      try{
+        if(typeof XLSX==='undefined'){
+          showInvRes(false,'Loading XLSX library...');
+          await new Promise((resolve,reject)=>{
+            const s=document.createElement('script');
+            s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+            s.onload=resolve;s.onerror=()=>reject(new Error('Failed to load XLSX library'));
+            document.head.appendChild(s);
+          });
+        }
+        const wb=XLSX.read(e.target.result,{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        if(!rows.length){showInvRes(false,'Empty file');return}
+        // Find header row (first row with ITEM or PRODUCT)
+        let headerIdx=0;
+        for(let i=0;i<Math.min(10,rows.length);i++){
+          const r=rows[i].map(c=>String(c).toUpperCase());
+          if(r.some(c=>c.includes('ITEM')||c.includes('PRODUCT'))){headerIdx=i;break}
+        }
+        const header=rows[headerIdx].map(c=>String(c).toUpperCase().trim());
+        const nameCol=header.findIndex(h=>h.includes('ITEM')||h.includes('PRODUCT')||h.includes('NAME'));
+        const catCol=header.findIndex(h=>h.includes('CATEGORY')||h.includes('CAT'));
+        const storeCol=header.findIndex(h=>h.includes('STORE')||h.includes('LOCATION'));
+        if(nameCol<0){showInvRes(false,'No ITEM/PRODUCT/NAME column found: '+header.join(', '));return}
+        masterInventory=[];
+        for(let i=headerIdx+1;i<rows.length;i++){
+          const r=rows[i];
+          const name=String(r[nameCol]||'').trim();
+          if(name.length>2){
+            masterInventory.push({
+              name,
+              category:catCol>=0?String(r[catCol]||'').trim():'',
+              store:storeCol>=0?String(r[storeCol]||'').trim():'',
+            });
+          }
+        }
+        // Deduplicate by name
+        const seen=new Set();
+        masterInventory=masterInventory.filter(p=>{const k=normalize(p.name);if(seen.has(k))return false;seen.add(k);return true});
+        saveInventory();renderInventory();
+        showInvRes(true,`Imported ${masterInventory.length} unique products from ${file.name}`);
+      }catch(err){showInvRes(false,'Error: '+err.message)}
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+function clearInventory(){
+  if(!confirm('Clear master inventory list?'))return;
+  masterInventory=[];saveInventory();renderInventory();
+  document.getElementById('invRes').style.display='none';
+  toast('Inventory cleared');
+}
+
+function showInvRes(ok,msg){
+  const el=document.getElementById('invRes');
+  el.className='result '+(ok?'ok':'err');el.innerHTML=msg;el.style.display='block';
+}
+
+function renderInventory(){
+  const search=(document.getElementById('invSearch')||{}).value||'';
+  const stats=document.getElementById('invStats');
+  const tbl=document.getElementById('invTbl');
+  if(!stats||!tbl)return;
+
+  stats.innerHTML=masterInventory.length?
+    `<span style="color:var(--success);font-size:12px">✓ ${masterInventory.length} products loaded — AI will use these as reference during parsing</span>`:
+    `<span style="color:var(--text-muted);font-size:12px">No inventory loaded. Upload a file to improve AI parsing accuracy.</span>`;
+
+  if(!masterInventory.length){tbl.innerHTML='';return}
+
+  let filtered=masterInventory;
+  if(search.length>=2){
+    const s=search.toLowerCase();
+    filtered=masterInventory.filter(p=>p.name.toLowerCase().includes(s)||p.category.toLowerCase().includes(s));
+  }
+
+  const showing=filtered.slice(0,200);
+  let html=`<div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Showing ${showing.length}${filtered.length>200?' of '+filtered.length:''} products</div>`;
+  html+='<div class="tbl-wrap"><table><thead><tr><th>Product Name</th><th>Category</th></tr></thead><tbody>';
+  showing.forEach(p=>{
+    html+=`<tr><td>${esc(p.name)}</td><td style="font-size:10px">${esc(p.category)}</td></tr>`;
+  });
+  html+='</tbody></table></div>';
+  tbl.innerHTML=html;
+}
+
+// Get top product names for the AI prompt (max 500 to avoid token overflow)
+function getInventoryHint(){
+  if(!masterInventory.length)return'';
+  const names=masterInventory.slice(0,500).map(p=>p.name);
+  return`\n\nREFERENCE — Known products in our inventory (use these to identify product names in messages):\n${names.join(', ')}`;
+}
+
+loadInventory();
+
+function clearAll(){if(!confirm('Clear all data?'))return;S.items=[];S.craftData=[];sv();renderData();updateBadge();toast('Cleared')}
+
+// ═══════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════
+function fD(n){if(!n&&n!==0)return'—';const a=Math.abs(n),s='$'+a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});return n<0?'-'+s:s}
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function toast(m){const el=document.createElement('div');el.className='toast';el.textContent=m;document.body.appendChild(el);setTimeout(()=>el.remove(),3000)}
+function updateBadge(){
+  document.getElementById('cBadge').textContent=S.items.filter(i=>i.recount).length;
+  const iBadge=document.getElementById('iBadge');
+  if(iBadge){
+    const unresolved=getInitiateItems().filter(it=>!getInitiateState(it).resolved).length;
+    iBadge.textContent=unresolved;
+    iBadge.style.display=unresolved>0?'':'none';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  INITIATE TAB — live-issue workflow (Step 4)
+// ═══════════════════════════════════════════════════
+// Routing: Slack-originated (⚡ Initiatecare) OR Craftable Status signals a product-level problem
+function isInitiateRouted(i){
+  if(!i)return false;
+  const src=i.issue_type!=='Craftable Variance'; // Slack-sourced
+  const s=i.craftable_status||'';
+  return src||s==='NOT IN CRAFTABLE'||s.startsWith('REVIEW');
+}
+function getInitiateItems(){
+  return S.items.filter(isInitiateRouted).map(i=>{
+    if(!i.item_id)i.item_id=stableItemId(i);
+    return i;
+  });
+}
+function initiateKey(venue,week,itemId){
+  return `${normalizeVenue(venue)}|${week}|${itemId}`;
+}
+function getInitiateState(item){
+  if(!S.initiate)S.initiate={};
+  const wk=item.week||weekLabel();
+  const k=initiateKey(item.venue,wk,item.item_id);
+  if(S.initiate[k])return S.initiate[k];
+  // Carry-over: if prior week has state for this item_id and this venue, surface it with repeating=true
+  if(S.priorWeek&&S.priorWeek.week){
+    const priorK=initiateKey(item.venue,S.priorWeek.week,item.item_id);
+    if(S.initiate[priorK]&&!S.initiate[priorK].resolved){
+      return{resolved:false,note:S.initiate[priorK].note||'',ts:null,initials:S.initiate[priorK].initials||'',repeating:true};
+    }
+  }
+  return{resolved:false,note:'',ts:null,initials:'',repeating:false};
+}
+function saveInitiateState(item,patch){
+  if(!S.initiate)S.initiate={};
+  const wk=item.week||weekLabel();
+  const k=initiateKey(item.venue,wk,item.item_id);
+  const cur=S.initiate[k]||getInitiateState(item);
+  S.initiate[k]={...cur,...patch};
+  sv();
+}
+function onInitiateToggle(itemId,venue,week){
+  const item=S.items.find(i=>i.item_id===itemId&&normalize(i.venue)===normalize(venue)&&(i.week||weekLabel())===week);
+  if(!item)return;
+  const cur=getInitiateState(item);
+  const initials=(prompt('Your initials (optional):',cur.initials||'')||'').toUpperCase().slice(0,4);
+  saveInitiateState(item,{resolved:!cur.resolved,ts:new Date().toISOString(),initials});
+  renderInitiate();updateBadge();
+}
+function onInitiateNote(itemId,venue,week,value){
+  const item=S.items.find(i=>i.item_id===itemId&&normalize(i.venue)===normalize(venue)&&(i.week||weekLabel())===week);
+  if(!item)return;
+  saveInitiateState(item,{note:value});
+}
+// Alias learning loop (R2 Issue 5e) — when the counter picks the right product
+// from the datalist, write it to S.learnedAliases so next week it auto-resolves.
+function onAliasMap(itemId,venue,craftableName){
+  if(!craftableName||craftableName==='-'){return}
+  const item=S.items.find(i=>i.item_id===itemId&&normalize(i.venue)===normalize(venue));
+  if(!item)return;
+  const slackKey=normalizeName(item.item_name);
+  const craftKey=normalizeName(craftableName);
+  if(!slackKey||!craftKey){toast('Could not normalize names for mapping');return}
+  if(!S.learnedAliases)S.learnedAliases={};
+  S.learnedAliases[slackKey]=craftKey;
+  sv();
+  // Re-run crossRef so the newly mapped item resolves immediately
+  crossRef();
+  renderInitiate();renderData();updateBadge();
+  toast(`Mapping saved: "${item.item_name}" → "${craftableName}"`);
+}
+// Produce the <option> list of AVT products at a venue for the datalist picker.
+function craftOptionsForVenue(venue){
+  const canon=normalize(normalizeVenue(venue));
+  const seen=new Set();
+  const opts=[];
+  for(const cv of S.craftData){
+    if(normalize(cv.venue)!==canon)continue;
+    if(seen.has(cv.item_name))continue;
+    seen.add(cv.item_name);
+    opts.push(cv.item_name);
+  }
+  return opts.sort();
+}
+function renderInitiate(){
+  const c=document.getElementById('initiateTbl');
+  if(!c)return;
+  const fv=document.getElementById('fIVen')?.value||'';
+  const routed=getInitiateItems().filter(i=>!fv||normalize(i.venue)===normalize(normalizeVenue(fv)));
+  // Enrich with state
+  const enriched=routed.map(i=>{
+    const st=getInitiateState(i);
+    return{item:i,state:st};
+  });
+  const unresolved=enriched.filter(r=>!r.state.resolved);
+  const resolved=enriched.filter(r=>r.state.resolved);
+  // Sort unresolved: repeating first, then by abs variance desc
+  unresolved.sort((a,b)=>{
+    if((b.state.repeating?1:0)!==(a.state.repeating?1:0))return (b.state.repeating?1:0)-(a.state.repeating?1:0);
+    return Math.abs(b.item.variance_dollars||0)-Math.abs(a.item.variance_dollars||0);
+  });
+  const statsBar=document.getElementById('iStatsBar');
+  if(statsBar){
+    statsBar.innerHTML=`<div class="stat"><div class="n" style="color:#dc2626">${unresolved.length}</div><div class="l">To Clear</div></div><div class="stat"><div class="n" style="color:#2d6a4f">${resolved.length}</div><div class="l">Resolved</div></div><div class="stat"><div class="n" style="color:#f59e0b">${unresolved.filter(r=>r.state.repeating).length}</div><div class="l">Repeating</div></div>`;
+  }
+  // R3.7 banner — surface live-platform rule so counters know why variance may be blank
+  const awaitingBanner=(!S.craftData||!S.craftData.length)?`<div style="margin-bottom:10px;padding:10px 14px;background:rgba(245,158,11,0.15);border-left:3px solid #f59e0b;border-radius:4px;font-size:12px"><strong>Awaiting this week's AVT</strong> — Slack items are listed but their variance numbers are pending. Import the Craftable AVT (Craftable tab) to populate variance before recount.</div>`:'';
+  if(!enriched.length){
+    c.innerHTML=awaitingBanner+'<div class="empty"><span class="ico">&#10003;</span>No live issues routed to Initiate. Import an AVT or parse Slack messages.</div>';
+    return;
+  }
+  // Build a datalist per venue so the Map-to picker has autocomplete of AVT products.
+  const venuesInView=[...new Set(enriched.map(r=>r.item.venue))];
+  const datalists=venuesInView.map(v=>{
+    const opts=craftOptionsForVenue(v).map(n=>`<option value="${esc(n)}"></option>`).join('');
+    return `<datalist id="dl-craft-${esc(normalize(v))}">${opts}</datalist>`;
+  }).join('');
+
+  const rowFor=(r)=>{
+    const i=r.item,st=r.state;
+    const key=`${i.item_id}::${i.venue}::${i.week||weekLabel()}`;
+    const repeatingTag=st.repeating?'<span style="background:#f59e0b;color:#000;font-size:8px;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px">REPEATING</span>':'';
+    const isSlack=i.issue_type!=='Craftable Variance'&&i.issue_type;
+    const sourceTag=isSlack?'<span style="background:#4A154B;color:#E8D5E0;font-size:8px;padding:1px 5px;border-radius:3px;font-weight:700;margin-right:4px">⚡ SLACK</span>':'<span style="background:#334155;color:#cbd5e1;font-size:8px;padding:1px 5px;border-radius:3px;font-weight:700;margin-right:4px">CATALOG</span>';
+    const statusTag=i.craftable_status?`<span style="font-size:9px;color:var(--text-muted)">${esc(i.craftable_status)}</span>`:'';
+    const vc=i.variance_dollars<0?'vn':i.variance_dollars>0?'vp':'';
+    const noteVal=st.note||'';
+    const tsLine=st.ts?`<div style="font-size:9px;color:var(--text-muted);margin-top:4px">Resolved ${new Date(st.ts).toLocaleString()}${st.initials?' · '+esc(st.initials):''}</div>`:'';
+    const issueHtml=buildIssueDetail(i);
+    // Alias learning loop: on REVIEW rows, let the counter pick the canonical AVT product.
+    const isReview=(i.craftable_status||'').startsWith('REVIEW')||(i.craftable_status||'')==='NOT IN CRAFTABLE';
+    const mapPicker=isReview?`<div style="margin-top:6px;display:flex;gap:4px;align-items:center"><input list="dl-craft-${esc(normalize(i.venue))}" placeholder="Map to AVT product…" style="flex:1;padding:3px 6px;font-size:10px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:3px;color:var(--text)" onchange="onAliasMap('${esc(i.item_id)}','${esc(i.venue)}',this.value)"><span style="font-size:9px;color:var(--text-muted)" title="Saving a mapping here teaches the matcher — next week this item auto-resolves.">ⓘ</span></div>`:'';
+    return `<tr data-key="${esc(key)}">
+      <td><input type="checkbox" ${st.resolved?'checked':''} onchange="onInitiateToggle('${esc(i.item_id)}','${esc(i.venue)}','${esc(i.week||weekLabel())}')" style="width:18px;height:18px;cursor:pointer"></td>
+      <td style="font-size:11px">${esc(i.venue)}</td>
+      <td>${sourceTag}<strong>${esc(i.item_name)}</strong>${repeatingTag}<div style="margin-top:3px">${statusTag}</div>${tsLine}${mapPicker}</td>
+      <td style="font-size:11px;max-width:340px">${issueHtml}</td>
+      <td class="num ${vc}">${i.variance_dollars?fD(i.variance_dollars):'—'}</td>
+      <td><input type="text" placeholder="Resolution note..." value="${esc(noteVal)}" oninput="onInitiateNote('${esc(i.item_id)}','${esc(i.venue)}','${esc(i.week||weekLabel())}',this.value)" style="width:100%;padding:4px 6px;font-size:11px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:4px;color:var(--text)"></td>
+    </tr>`;
+  };
+  const tblHdr='<div class="tbl-wrap"><table><thead><tr><th style="width:40px">✓</th><th>Venue</th><th>Product</th><th>Issue</th><th>Var $</th><th>Resolution note</th></tr></thead><tbody>';
+  let html=awaitingBanner+datalists+tblHdr;
+  unresolved.forEach(r=>html+=rowFor(r));
+  html+='</tbody></table></div>';
+  if(resolved.length){
+    html+=`<details style="margin-top:14px"><summary style="cursor:pointer;color:var(--text-muted);font-size:11px;padding:6px 0">Resolved this session (${resolved.length}) — click to expand</summary><div class="tbl-wrap" style="margin-top:6px">${tblHdr.replace('<div class="tbl-wrap">','')}`;
+    resolved.forEach(r=>html+=rowFor(r));
+    html+='</tbody></table></div></details>';
+  }
+  c.innerHTML=html;
+}
+
+// Human-readable explanation of WHY an item landed on Initiate.
+// For Slack-sourced items: shows the AI-parsed issue_type, notes, location, quantity.
+// For catalog-level REVIEW statuses: shows what the counter needs to verify.
+// Human-readable explanations keyed on the new R2 status taxonomy.
+function catalogHelpFor(status){
+  if(!status)return null;
+  if(status==='PENDING — Awaiting AVT')return"This item was parsed from Slack but hasn't been cross-referenced against a fresh AVT yet. Upload this week's Craftable AVT to see variance numbers.";
+  if(status==='REVIEW — No Match')return'No matching product in Craftable. Verify the product exists in the catalog — add it, or correct the name spelling at source.';
+  if(status==='REVIEW — No ID')return'Product matches by name but has no Bevager ID. Ask a platform admin to assign one so future joins are reliable.';
+  if(status.startsWith('REVIEW — Near Match'))return'High confidence (95–99%) match — confirm both names refer to the same product before accepting.';
+  if(status.startsWith('REVIEW — Low Confidence'))return'Weak fuzzy match (85–94%) — confirm this is the right item before treating the variance as valid.';
+  if(status==='REVIEW — Missing Actual/Theo')return'Variance logged but actual and theoretical counts are both blank. Manual recount needed.';
+  if(status==='NOT IN CRAFTABLE')return'Product not in our Craftable catalog at all. Counter needs to confirm it physically exists at the venue.';
+  if(status==='Craftable Only — No ID')return'Craftable returned a variance for this item but no stable ID. Ask admin to populate it.';
+  return null;
+}
+function buildIssueDetail(i){
+  const parts=[];
+  const isSlack=i.issue_type&&i.issue_type!=='Craftable Variance';
+  if(isSlack){
+    parts.push(`<div style="font-weight:600;color:var(--accent)">${esc(i.issue_type)}</div>`);
+    if(i.notes)parts.push(`<div style="margin-top:3px;color:var(--text)">${esc(i.notes)}</div>`);
+    const meta=[];
+    if(i.sub_location)meta.push(`📍 ${esc(i.sub_location)}`);
+    if(i.quantity)meta.push(`${esc(i.quantity)}× unit${Number(i.quantity)===1?'':'s'}`);
+    if(meta.length)parts.push(`<div style="margin-top:3px;font-size:10px;color:var(--text-muted)">${meta.join(' · ')}</div>`);
+  }
+  // Both-names panel — when a match exists but is a REVIEW tier, spell out both sides so the counter can sanity-check.
+  if(i.craftable_match&&i.craftable_match!==i.item_name){
+    const score=i.match_score!=null?` · ${i.match_score}%`:'';
+    parts.push(`<div style="margin-top:${parts.length?'6px':'0'};font-size:10px;color:var(--text-muted)"><div>Slack/Source: <span style="color:var(--text)">${esc(i.item_name)}</span></div><div>Craftable AVT: <span style="color:var(--text)">${esc(i.craftable_match)}</span>${score}</div></div>`);
+  }
+  // Match Flag (e.g. VINTAGE_MISMATCH:2022vs2021) — something the counter needs to ask about at the shelf.
+  if(i.match_flag){
+    parts.push(`<div style="margin-top:${parts.length?'6px':'0'};font-size:10px"><span style="background:#f59e0b;color:#000;padding:1px 6px;border-radius:3px;font-weight:700">${esc(i.match_flag)}</span></div>`);
+  }
+  const help=catalogHelpFor(i.craftable_status||'');
+  if(help){
+    parts.push(`<div style="margin-top:${parts.length?'6px':'0'};padding:4px 6px;background:rgba(220,38,38,0.08);border-left:2px solid #dc2626;font-size:10px;line-height:1.35">${esc(help)}</div>`);
+  }
+  if(!parts.length){
+    parts.push(`<div style="color:var(--text-muted);font-style:italic">No issue context recorded.</div>`);
+  }
+  return parts.join('');
+}
+
+// INIT
+// R3 Issue 2 — startup self-test: loud failure if the known typo pairs don't collapse.
+// Any production-observed pair added here must pass, or the matcher is silently broken.
+(function verifyAliasesAtStartup(){
+  const cases=[
+    ["Moet 'Imperal' Brut","Moet 'Imperial' Brut"],
+    ["Moet Imperal Rose 1.5L","Moet Imperial Rose 1.5L"],
+    ["Vocal Vinyard Lobo Marino","Vocal Vineyards Lobo Marino"],
+    ["Tyler Santa Barbra Pinot Noir","Tyler Santa Barbara Pinot Noir"],
+    ["Stranahans Blue Peak","Stranahan's Blue Peak"],
+    ["Hennesy VS","Hennessy VS"],
+    ["Chardonay 2022","Chardonnay 2022"]
+  ];
+  let pass=0,fail=0;const failures=[];
+  for(const [a,b] of cases){
+    const na=normalizeName(a),nb=normalizeName(b);
+    if(na===nb)pass++;else{fail++;failures.push(`  "${a}" → "${na}"  vs  "${b}" → "${nb}"`)}
+  }
+  const builtin=Object.keys(DEFAULT_TYPO_ALIASES).length;
+  const custom=Object.keys((S&&S.customTypoAliases)||{}).length;
+  const learned=Object.keys((S&&S.learnedAliases)||{}).length;
+  if(fail){
+    console.error(`[inventory] ALIAS SELF-TEST FAILED — ${fail}/${cases.length} pairs do not collapse:\n${failures.join('\n')}`);
+    console.error('[inventory] Fix DEFAULT_TYPO_ALIASES or SINGULAR_PLURAL in index.html before matching can be trusted.');
+  }else{
+    console.log(`[inventory] Alias self-test OK — ${pass}/${cases.length} known pairs collapse. ${builtin} built-in + ${custom} custom + ${learned} learned aliases active.`);
+  }
+})();
+wipeStaleVariance(); // R3.7 — enforce live-platform rule: no last-week numeric data survives a page load.
+renderVS();renderSettings();updateBadge();setupAutoPull();setupImageHandlers();
+</script>
+</body>
+</html>

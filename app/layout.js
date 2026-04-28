@@ -1,6 +1,6 @@
 export const metadata = {
-  title: "Keva Production Capacity Planner — Delilah LA",
-  description: "Depletion-weighted production capacity planning for Hwood Group venues",
+  title: "Hwood Engines",
+  description: "Operational engines for Hwood Group venues — capacity planning, inventory workflow, and procurement.",
 };
 
 export default function RootLayout({ children }) {

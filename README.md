@@ -1,74 +1,58 @@
-# Keva Production Capacity Planner — Delilah LA
+# Hwood Engines
 
-Production capacity planning tool for Hwood Group. Shows allocated batch capacity per recipe based on real inventory and depletion-weighted ingredient sharing.
+Operational engines for Hwood Group venues. A Next.js shell that hosts three independent tools at clean URL paths.
 
-**100 recipes · 335 ingredients · Delilah LA inventory**
-
----
-
-## Deploy to GitHub Pages (Free, 5 minutes)
-
-### Step 1 — Create a Private GitHub Repository
-
-Go to https://github.com/new
-- **Name:** `keva-capacity-planner`
-- **Visibility:** Private
-- Click **Create repository**
-
-### Step 2 — Push This Code
-
-Extract the zip, open PowerShell in the `keva-deploy` folder, and run:
-
-```powershell
-git init
-git add .
-git commit -m "Keva Capacity Planner v1"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/keva-capacity-planner.git
-git push -u origin main
-```
-
-Replace `YOUR_USERNAME` with your GitHub username.
-
-### Step 3 — Enable GitHub Pages
-
-1. Go to your repo on GitHub
-2. Click **Settings** (top menu)
-3. Click **Pages** (left sidebar)
-4. Under **Source**, select **GitHub Actions**
-5. That's it — the workflow file included in this repo handles the rest
-
-### Step 4 — Wait for Deploy
-
-1. Click the **Actions** tab in your repo
-2. You'll see a workflow running called "Deploy to GitHub Pages"
-3. Wait ~2 minutes for it to finish (green checkmark)
-
-### Step 5 — Share the URL
-
-Your site is live at:
-
-```
-https://YOUR_USERNAME.github.io/keva-capacity-planner
-```
-
-Share this link with your manager. Works on any browser, any device, no login needed.
+| Engine | Path | What it does |
+|---|---|---|
+| **Keva** | `/keva` | Production capacity planner — depletion-weighted batch capacity per recipe |
+| **Inventory Workflow** | `/inventory/` | Stock movement, transfers, counts, reconciliation |
+| **Procurement Engine** | `/procurement/` | Dual-loop Min/Max + warehouse s/S, first orders, TCO |
 
 ---
 
-## Run Locally (Optional)
+## Layout
+
+```
+app/
+  layout.js              shared metadata
+  page.jsx               landing page (links to all three engines)
+  keva/
+    layout.js            Keva-specific metadata
+    page.jsx             Keva React app (originally keva-capacity-planner)
+public/
+  inventory/             static HTML (originally inventory-workflow)
+  procurement/           static HTML demo (originally Hwood-procurement-engine)
+procurement-engine-source/  Python library reference (not deployed)
+```
+
+The two static HTML apps in `public/` are served verbatim — they're fully self-contained (inline CSS + JS), so no build step touches them.
+
+---
+
+## Run Locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000
+Open http://localhost:3000 — the landing page links to all three engines.
+
+---
+
+## Build & Deploy
+
+```bash
+npm run build
+```
+
+Produces a static export in `out/`. Deploy `out/` to any static host (Vercel, Netlify, GitHub Pages, Cloudflare Pages).
+
+If hosting under a sub-path, set `NEXT_PUBLIC_BASE_PATH` before building (see `next.config.js`).
 
 ---
 
 ## Notes
 
-- All data is embedded in the app (no database)
-- Edits reset on page refresh (demo mode)
-- Future: connect to Supabase via KevaOS for persistent data
+- The original repos (`keva-capacity-planner`, `inventory-workflow`, `Hwood-procurement-engine`) remain on GitHub unchanged.
+- The Python procurement engine in `procurement-engine-source/` is a CLI library — it is **not** deployed with the website. Run it locally with Python 3.10+.
