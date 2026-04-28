@@ -3,27 +3,29 @@ export const metadata = {
   description: "Operational engines for Hwood Group venues.",
 };
 
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 const engines = [
   {
     name: "Keva",
     tagline: "Production Capacity Planner",
     description:
       "Depletion-weighted production capacity planning. Models bartender throughput, prep load, and shift mix to flag bottlenecks before service.",
-    href: "/keva/",
+    href: `${BASE_PATH}/keva/`,
   },
   {
     name: "Inventory Workflow",
     tagline: "Stock Movement & Reconciliation",
     description:
       "End-to-end inventory workflow — receive, transfer, count, reconcile. Surfaces variance, shrinkage, and slow-movers across venues.",
-    href: "/inventory/index.html",
+    href: `${BASE_PATH}/inventory/index.html`,
   },
   {
     name: "Procurement Engine",
     tagline: "Min/Max + Warehouse s/S",
     description:
       "Dual-loop procurement: venue Min/Max plus warehouse s/S. Computes reorder points, first orders, stress tests, and TCO targets.",
-    href: "/procurement/index.html",
+    href: `${BASE_PATH}/procurement/index.html`,
   },
 ];
 
