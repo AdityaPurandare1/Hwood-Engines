@@ -232,14 +232,16 @@ function statusForItem(report) {
 
 // ─── Dashboard ───
 function DashboardPage({ items, reports, gotoItem, gotoTab }) {
+  const [posFilter, setPosFilter] = useState('all'); // all | venue | wh
   const totalVenues = new Set(items.flatMap(i => i.venues.map(v => v.name))).size;
   const totalItems = items.length;
   const openValue = reports.reduce((a, r) => a + (r.firstOrder.totalCost || 0), 0);
   const itemsAtRisk = reports.filter(r => statusForItem(r).tone === 'bad').length;
   const itemsToWatch = reports.filter(r => statusForItem(r).tone === 'warn').length;
+  const avgLeadTime = items.length > 0 ? Math.round(items.reduce((a,i)=>a+i.leadTime,0)/items.length) : 0;
+  const activeSuppliers = new Set(items.map(i=>i.supplier).filter(Boolean)).size;
 
-  // compute aggregate POs to be issued
-  const pos = reports.flatMap(r => {
+  const allPos = reports.flatMap(r => {
     const out = [];
     r.venues.forEach(v => {
       if (v.needNowCases > 0) out.push({ item: r.item.name, dest: v.name, units: v.needNowCases, kind: 'venue' });
@@ -247,12 +249,15 @@ function DashboardPage({ items, reports, gotoItem, gotoTab }) {
     if (r.warehouse.warehouseNeedCases > 0) out.push({ item: r.item.name, dest: 'Warehouse', units: r.warehouse.warehouseNeedCases, kind: 'wh' });
     return out;
   });
+  const venuePoCount = allPos.filter(p => p.kind === 'venue').length;
+  const whPoCount = allPos.filter(p => p.kind === 'wh').length;
+  const pos = posFilter === 'all' ? allPos : allPos.filter(p => p.kind === posFilter);
 
   return (
     <div className="stack" style={{gap:24}}>
       {/* KPI strip */}
       <div className="kpi-row">
-        <Kpi deep label="Items Tracked" value={totalItems} sub={`Across ${totalVenues} venues`}/>
+        <Kpi deep label="Items Tracked" value={totalItems} sub={`Across ${totalVenues} venue${totalVenues === 1 ? '' : 's'}`}/>
         <Kpi label="Reorder Now" value={itemsAtRisk} sub={itemsAtRisk === 0 ? 'All items in position' : 'Items below reorder point'}/>
         <Kpi label="Watch List" value={itemsToWatch} sub="Need attention this week"/>
         <Kpi label="Open Order Value" value={fmt$(openValue)} sub="Recommended POs, all items"/>
@@ -260,6 +265,9 @@ function DashboardPage({ items, reports, gotoItem, gotoTab }) {
 
       <div className="detail-grid">
         <Card title="Items by Status" right={<Btn variant="ghost" size="sm" onClick={()=>gotoTab('items')}>View All</Btn>}>
+          {reports.length === 0 ? (
+            <div className="empty"><h3>No items tracked</h3><p>Add or import items to see status here.</p></div>
+          ) : (
           <table className="tbl">
             <thead>
               <tr>
@@ -294,21 +302,28 @@ function DashboardPage({ items, reports, gotoItem, gotoTab }) {
               })}
             </tbody>
           </table>
+          )}
         </Card>
 
         <div className="stack" style={{gap:14}}>
           <Card title="Recommended POs" compact>
-            {pos.length === 0 ? <div className="muted" style={{padding:'8px 0'}}>No orders needed today.</div> :
+            <div className="row" style={{gap:6, flexWrap:'wrap', marginBottom:10}}>
+              <span className={`chip ${posFilter==='all'?'on':''}`} onClick={()=>setPosFilter('all')}>All <span className="num" style={{opacity:.6, marginLeft:4}}>{allPos.length}</span></span>
+              <span className={`chip ${posFilter==='venue'?'on':''}`} onClick={()=>setPosFilter('venue')}>Venues <span className="num" style={{opacity:.6, marginLeft:4}}>{venuePoCount}</span></span>
+              <span className={`chip ${posFilter==='wh'?'on':''}`} onClick={()=>setPosFilter('wh')}>Warehouse <span className="num" style={{opacity:.6, marginLeft:4}}>{whPoCount}</span></span>
+            </div>
+            {pos.length === 0 ? <div className="muted" style={{padding:'8px 0'}}>{allPos.length === 0 ? 'No orders needed today.' : `No ${posFilter === 'wh' ? 'warehouse' : 'venue'} orders pending.`}</div> :
               <div className="stack-sm">
                 {pos.slice(0, 6).map((p, i) => (
                   <div key={i} className="row between" style={{padding:'8px 0', borderBottom:'1px solid var(--woody-line-warm)'}}>
                     <div>
                       <div style={{font:'500 13px/18px var(--font-sans)'}}>{p.item}</div>
-                      <div style={{font:'400 11px/14px var(--font-sans)', color:'var(--woody-ink-4)'}}>→ {p.dest}</div>
+                      <div style={{font:'400 11px/14px var(--font-sans)', color:'var(--woody-ink-4)'}}>→ {p.dest}{p.kind === 'wh' && <span style={{marginLeft:6, fontSize:10, padding:'1px 6px', background:'var(--woody-paper)', borderRadius:3, letterSpacing:'0.04em', textTransform:'uppercase'}}>WH</span>}</div>
                     </div>
                     <div className="num" style={{font:'600 14px/18px var(--font-numeric)'}}>{p.units} <span style={{color:'var(--woody-ink-4)', fontWeight:400, fontSize:11}}>units</span></div>
                   </div>
                 ))}
+                {pos.length > 6 && <div className="muted" style={{fontSize:12, paddingTop:6}}>+{pos.length - 6} more</div>}
               </div>
             }
             <div style={{paddingTop:12}}>
@@ -318,8 +333,8 @@ function DashboardPage({ items, reports, gotoItem, gotoTab }) {
 
           <Card title="System Health" compact>
             <div className="stack-sm">
-              <div className="row between"><span className="muted" style={{fontSize:13}}>Avg Lead Time</span><b className="num">{Math.round(items.reduce((a,i)=>a+i.leadTime,0)/items.length)} days</b></div>
-              <div className="row between"><span className="muted" style={{fontSize:13}}>Active Suppliers</span><b className="num">{new Set(items.map(i=>i.supplier)).size}</b></div>
+              <div className="row between"><span className="muted" style={{fontSize:13}}>Avg Lead Time</span><b className="num">{avgLeadTime} days</b></div>
+              <div className="row between"><span className="muted" style={{fontSize:13}}>Active Suppliers</span><b className="num">{activeSuppliers}</b></div>
               <div className="row between"><span className="muted" style={{fontSize:13}}>Service Level Target</span><b className="num">95%</b></div>
               <div className="row between"><span className="muted" style={{fontSize:13}}>Review Cycle</span><b className="num">Weekly</b></div>
             </div>
@@ -970,26 +985,38 @@ function ParAdvisorPage({ items, reports, onApplyDepletion, onToast }) {
 // ─── Orders Page ───
 function OrdersPage({ items, reports, recentPOs }) {
   const [tab, setTab] = useState('suggested');
+  const [destFilter, setDestFilter] = useState('all'); // all | venue | wh
 
-  // build suggested POs from reports, grouped by supplier
-  const suggested = [];
+  // build suggested POs from reports
+  const allSuggested = [];
   reports.forEach(r => {
     r.venues.forEach(v => {
-      if (v.needNowCases > 0) suggested.push({
+      if (v.needNowCases > 0) allSuggested.push({
         item: r.item, dest: v.name, units: v.needNowCases, cases: v.needNowPacks, kind: 'venue',
         cost: r.item.unitCost ? +(v.needNowCases * r.item.unitCost).toFixed(2) : null,
       });
     });
-    if (r.warehouse.warehouseNeedCases > 0) suggested.push({
+    if (r.warehouse.warehouseNeedCases > 0) allSuggested.push({
       item: r.item, dest: 'Warehouse', units: r.warehouse.warehouseNeedCases, cases: Math.floor(r.warehouse.warehouseNeedCases / r.item.caseSize), kind: 'wh',
       cost: r.item.unitCost ? +(r.warehouse.warehouseNeedCases * r.item.unitCost).toFixed(2) : null,
     });
   });
+  const venueCount = allSuggested.filter(s => s.kind === 'venue').length;
+  const whCount = allSuggested.filter(s => s.kind === 'wh').length;
+  const suggested = destFilter === 'all' ? allSuggested : allSuggested.filter(s => s.kind === destFilter);
+
+  // Filter reports for the export to match what's visible
+  const exportReports = destFilter === 'all'
+    ? reports
+    : reports.map(r => destFilter === 'wh'
+        ? { ...r, venues: r.venues.map(v => ({ ...v, needNowCases: 0, needNowPacks: 0 })) }
+        : { ...r, warehouse: { ...r.warehouse, warehouseNeedCases: 0 } }
+      );
 
   // group by supplier
   const grouped = {};
   suggested.forEach(o => {
-    const k = o.item.supplier;
+    const k = o.item.supplier || '(No supplier)';
     if (!grouped[k]) grouped[k] = { supplier: k, contact: o.item.supplierContact, lines: [], total: 0 };
     grouped[k].lines.push(o);
     grouped[k].total += (o.cost || 0);
@@ -998,48 +1025,56 @@ function OrdersPage({ items, reports, recentPOs }) {
 
   return (
     <div className="stack" style={{gap:18}}>
-      <div className="row between">
+      <div className="row between" style={{flexWrap:'wrap', gap:12}}>
         <div className="status-bar">
           <div className={`seg ${tab==='suggested'?'on':''}`} onClick={()=>setTab('suggested')}>Suggested</div>
           <div className={`seg ${tab==='active'?'on':''}`} onClick={()=>setTab('active')}>Active</div>
           <div className={`seg ${tab==='received'?'on':''}`} onClick={()=>setTab('received')}>Received</div>
         </div>
         <div className="row" style={{gap:8}}>
-          <Btn variant="ghost" size="sm" leading="download" onClick={()=>exportSuggestedPOsXlsx(reports)}>Export</Btn>
+          <Btn variant="ghost" size="sm" leading="download" onClick={()=>exportSuggestedPOsXlsx(exportReports)}>Export</Btn>
           <Btn size="sm" leading="plus-bkg">New PO</Btn>
         </div>
       </div>
 
       {tab === 'suggested' && (
-        groups.length === 0
-          ? <Card><div className="empty"><h3>All caught up</h3><p>No suggested orders right now. Items are at PAR and the warehouse is above its reorder point.</p></div></Card>
-          : <div className="stack">
-              {groups.map(g => (
-                <Card key={g.supplier} title={g.supplier} right={<div className="row" style={{gap:14}}>
-                  <span className="muted" style={{fontSize:12}}>{g.lines.length} lines</span>
-                  <span className="amt">{fmt$(g.total)}</span>
-                  <Btn size="sm">Issue PO</Btn>
-                </div>}>
-                  <div className="muted" style={{fontSize:12, marginTop:-4, marginBottom:14}}>{g.contact}</div>
-                  <table className="tbl">
-                    <thead><tr>
-                      <th>Item</th><th>Destination</th><th className="right">Units</th><th className="right">Cases</th><th className="right">Est. Cost</th>
-                    </tr></thead>
-                    <tbody>
-                      {g.lines.map((l, i) => (
-                        <tr key={i}>
-                          <td><div className="name">{l.item.name}</div><div className="sku">{l.item.sku}</div></td>
-                          <td>{l.kind === 'wh' ? <Pill tone="info">Warehouse</Pill> : <Pill tone="neutral">{l.dest}</Pill>}</td>
-                          <td className="right num">{l.units}</td>
-                          <td className="right num">{l.cases}</td>
-                          <td className="right num">{fmt$(l.cost)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </Card>
-              ))}
-            </div>
+        <>
+          <div className="row" style={{gap:8, flexWrap:'wrap'}}>
+            <span className={`chip ${destFilter==='all'?'on':''}`} onClick={()=>setDestFilter('all')}>All <span className="num" style={{opacity:.6, marginLeft:4}}>{allSuggested.length}</span></span>
+            <span className={`chip ${destFilter==='venue'?'on':''}`} onClick={()=>setDestFilter('venue')}>Venue Top-Ups <span className="num" style={{opacity:.6, marginLeft:4}}>{venueCount}</span></span>
+            <span className={`chip ${destFilter==='wh'?'on':''}`} onClick={()=>setDestFilter('wh')}>Warehouse Refills <span className="num" style={{opacity:.6, marginLeft:4}}>{whCount}</span></span>
+          </div>
+          {groups.length === 0
+            ? <Card><div className="empty"><h3>All caught up</h3><p>{allSuggested.length === 0 ? 'No suggested orders right now. Items are at PAR and the warehouse is above its reorder point.' : `No ${destFilter === 'wh' ? 'warehouse' : 'venue'} orders pending — try a different filter.`}</p></div></Card>
+            : <div className="stack">
+                {groups.map(g => (
+                  <Card key={g.supplier} title={g.supplier} right={<div className="row" style={{gap:14}}>
+                    <span className="muted" style={{fontSize:12}}>{g.lines.length} {g.lines.length === 1 ? 'line' : 'lines'}</span>
+                    <span className="amt">{fmt$(g.total)}</span>
+                    <Btn size="sm">Issue PO</Btn>
+                  </div>}>
+                    <div className="muted" style={{fontSize:12, marginTop:-4, marginBottom:14}}>{g.contact}</div>
+                    <table className="tbl">
+                      <thead><tr>
+                        <th>Item</th><th>Destination</th><th className="right">Units</th><th className="right">Cases</th><th className="right">Est. Cost</th>
+                      </tr></thead>
+                      <tbody>
+                        {g.lines.map((l, i) => (
+                          <tr key={i}>
+                            <td><div className="name">{l.item.name}</div><div className="sku">{l.item.sku}</div></td>
+                            <td>{l.kind === 'wh' ? <Pill tone="info">Warehouse</Pill> : <Pill tone="neutral">{l.dest}</Pill>}</td>
+                            <td className="right num">{l.units}</td>
+                            <td className="right num">{l.cases}</td>
+                            <td className="right num">{fmt$(l.cost)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </Card>
+                ))}
+              </div>
+          }
+        </>
       )}
 
       {tab === 'active' && (

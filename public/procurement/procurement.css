@@ -27,8 +27,10 @@
 .num { font-family: var(--font-numeric); letter-spacing: 0.005em; font-variant-numeric: tabular-nums; }
 
 /* KPI strip */
-.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.kpi-row.three { grid-template-columns: repeat(3, 1fr); }
+.kpi-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.kpi-row.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .kpi-row, .kpi-row.three { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .kpi-row, .kpi-row.three { grid-template-columns: 1fr; } }
 .kpi { background: var(--woody-white); border: 1px solid var(--woody-line-warm); border-radius: 8px; padding: 18px 22px; }
 .kpi__label { font: 400 11px/14px var(--font-sans); color: var(--woody-ink-4); letter-spacing: 0.08em; text-transform: uppercase; }
 .kpi__val { font: 600 36px/42px var(--font-numeric); color: var(--woody-ink); margin-top: 6px; letter-spacing: -0.005em; font-variant-numeric: tabular-nums; }
@@ -41,6 +43,7 @@
 .kpi.deep .kpi__sub { color: rgba(255,249,245,0.65); }
 
 /* Table */
+.card { min-width: 0; overflow-x: auto; }
 .tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
 .tbl th { text-align: left; font: 500 11px/14px var(--font-sans); color: var(--woody-ink-4); letter-spacing: 0.08em; text-transform: uppercase; padding: 10px 14px; border-bottom: 1px solid var(--woody-line-warm); white-space: nowrap; }
 .tbl th.right, .tbl td.right { text-align: right; }
@@ -149,8 +152,8 @@ select:focus { border-color: var(--woody-ink); }
 .subtabs .t.active { color: var(--woody-ink); border-bottom-color: var(--woody-ink); font-weight: 500; }
 
 /* Side panel (item detail) */
-.detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
-@media (max-width: 1100px) { .detail-grid { grid-template-columns: 1fr; } }
+.detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); gap: 20px; align-items: start; }
+@media (max-width: 1280px) { .detail-grid { grid-template-columns: 1fr; } }
 
 /* TCO grid */
 .tco-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
