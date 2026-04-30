@@ -331,9 +331,10 @@ function DashboardPage({ items, reports, gotoItem, gotoTab }) {
 }
 
 // ─── Items List ───
-function ItemsPage({ items, reports, gotoItem, openNew, onImport, onToast }) {
+function ItemsPage({ items, reports, gotoItem, openNew, onImport, onToast, onArchiveAll }) {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState('all'); // all, reorder, watch, ok
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
   const fileRef = React.useRef(null);
   const filtered = reports.filter(r => {
     const s = statusForItem(r);
@@ -375,8 +376,24 @@ function ItemsPage({ items, reports, gotoItem, openNew, onImport, onToast }) {
         <Btn variant="ghost" size="sm" leading="download" onClick={downloadImportTemplate}>Template</Btn>
         <Btn variant="ghost" size="sm" leading="upload" onClick={()=>fileRef.current?.click()}>Import</Btn>
         <Btn variant="ghost" size="sm" leading="download" onClick={()=>exportAllXlsx(reports)}>Export All</Btn>
+        {items.length > 0 && <Btn variant="ghost" size="sm" leading="delete" onClick={()=>setConfirmingRemove(true)}>Remove All</Btn>}
         <Btn size="sm" leading="plus-bkg" onClick={openNew}>New Item</Btn>
       </div>
+
+      {confirmingRemove && (
+        <Modal title="Remove all items?" onClose={()=>setConfirmingRemove(false)} actions={<>
+          <Btn variant="ghost" size="sm" onClick={()=>setConfirmingRemove(false)}>Cancel</Btn>
+          <Btn size="sm" onClick={()=>{
+            const n = items.length;
+            onArchiveAll?.();
+            setConfirmingRemove(false);
+            onToast?.(`Archived ${n} item${n === 1 ? '' : 's'} to History`);
+          }}>Archive {items.length}</Btn>
+        </>}>
+          <p style={{margin:'0 0 8px'}}>All <b>{items.length}</b> item{items.length === 1 ? '' : 's'} will be moved to <b>History</b>. They stop producing reports and suggested POs, but you can restore individual items or the whole batch from there.</p>
+          <p style={{margin:0, color:'var(--woody-ink-4)', fontSize:13}}>Recent purchase orders are not affected.</p>
+        </Modal>
+      )}
 
       <Card>
         {filtered.length === 0
@@ -1098,4 +1115,117 @@ function ItemEditModal({ item, onSave, onClose }) {
   );
 }
 
-Object.assign(window, { DashboardPage, ItemsPage, ItemDetail, ParAdvisorPage, OrdersPage, ItemEditModal, statusForItem });
+// ─── History Page ───
+function HistoryPage({ archivedItems, recentPOs, onRestore, onRestoreAll, onClearArchive, onToast }) {
+  const [confirming, setConfirming] = useState(null); // 'clear' | 'restore-all' | null
+
+  const handleRestore = (id) => {
+    onRestore?.(id);
+    onToast?.('Item restored');
+  };
+  const handleRestoreAll = () => {
+    setConfirming(null);
+    onRestoreAll?.();
+    onToast?.(`Restored ${archivedItems.length} item${archivedItems.length === 1 ? '' : 's'}`);
+  };
+  const handleClearArchive = () => {
+    setConfirming(null);
+    const n = archivedItems.length;
+    onClearArchive?.();
+    onToast?.(`Cleared ${n} archived item${n === 1 ? '' : 's'}`);
+  };
+
+  const fmtDate = (ts) => {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    return `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')}/${d.getFullYear().toString().slice(2)}`;
+  };
+
+  return (
+    <div className="stack" style={{gap:18}}>
+      {archivedItems.length > 0 ? (
+        <Card title={`Archived Items (${archivedItems.length})`} right={
+          <div className="row" style={{gap:8}}>
+            <Btn variant="ghost" size="sm" onClick={()=>setConfirming('clear')}>Clear Archive</Btn>
+            <Btn size="sm" onClick={()=>setConfirming('restore-all')}>Restore All</Btn>
+          </div>
+        }>
+          <table className="tbl">
+            <thead><tr>
+              <th>Item</th>
+              <th>Category</th>
+              <th>Supplier</th>
+              <th className="right">Venues</th>
+              <th className="right">Total PAR</th>
+              <th>Archived</th>
+              <th></th>
+            </tr></thead>
+            <tbody>
+              {archivedItems.map(it => (
+                <tr key={it.id}>
+                  <td><div className="name">{it.name}</div><div className="sku">{it.sku}</div></td>
+                  <td className="muted">{it.subcategory}</td>
+                  <td className="muted" style={{fontSize:13}}>{it.supplier || '—'}</td>
+                  <td className="right num">{it.venues?.length || 0}</td>
+                  <td className="right num">{(it.venues || []).reduce((a,v) => a + (v.par || 0), 0)}</td>
+                  <td className="muted" style={{fontSize:13}}>{fmtDate(it.archivedAt)}</td>
+                  <td><Btn variant="ghost" size="sm" onClick={()=>handleRestore(it.id)}>Restore</Btn></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      ) : (
+        <Card title="Archived Items">
+          <div className="empty">
+            <h3>No archived items</h3>
+            <p>Use <b>Remove All</b> on the Items page to archive everything here. You can restore individual items or the whole batch from this page.</p>
+          </div>
+        </Card>
+      )}
+
+      <Card title="Recent Purchase Orders">
+        {(!recentPOs || recentPOs.length === 0) ? (
+          <div className="empty"><h3>No POs yet</h3><p>Generated purchase orders will land here once you start issuing them.</p></div>
+        ) : (
+          <table className="tbl">
+            <thead><tr><th>Date</th><th>PO #</th><th>Item</th><th>Destination</th><th className="right">Units</th><th className="right">Total</th><th>Status</th></tr></thead>
+            <tbody>
+              {recentPOs.map(p => (
+                <tr key={p.id}>
+                  <td className="num">{p.placed}</td>
+                  <td><b style={{fontFamily:'var(--font-mono)', fontSize:13}}>{p.id}</b></td>
+                  <td>{p.item}</td>
+                  <td>{p.dest}</td>
+                  <td className="right num">{p.units}</td>
+                  <td className="right num">${p.total.toFixed(2)}</td>
+                  <td>{p.status === 'received' ? <Pill tone="ok">Received</Pill> : p.status === 'in-transit' ? <Pill tone="info">In Transit</Pill> : <Pill tone="warn">Placed</Pill>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+
+      {confirming === 'restore-all' && (
+        <Modal title="Restore all archived items?" onClose={()=>setConfirming(null)} actions={<>
+          <Btn variant="ghost" size="sm" onClick={()=>setConfirming(null)}>Cancel</Btn>
+          <Btn size="sm" onClick={handleRestoreAll}>Restore {archivedItems.length}</Btn>
+        </>}>
+          <p style={{margin:0}}>All <b>{archivedItems.length}</b> archived items will be moved back to the Items list. They will start producing reports and POs again on next render.</p>
+        </Modal>
+      )}
+
+      {confirming === 'clear' && (
+        <Modal title="Clear archive?" onClose={()=>setConfirming(null)} actions={<>
+          <Btn variant="ghost" size="sm" onClick={()=>setConfirming(null)}>Cancel</Btn>
+          <Btn size="sm" onClick={handleClearArchive}>Delete {archivedItems.length}</Btn>
+        </>}>
+          <p style={{margin:0, color:'var(--woody-error)'}}><b>This is permanent.</b> {archivedItems.length} archived item{archivedItems.length === 1 ? '' : 's'} will be deleted from history with no way to recover.</p>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+Object.assign(window, { DashboardPage, ItemsPage, ItemDetail, ParAdvisorPage, OrdersPage, HistoryPage, ItemEditModal, statusForItem });

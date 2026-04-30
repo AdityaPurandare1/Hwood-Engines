@@ -29,6 +29,13 @@ function App() {
     }
     return SEED_DATA.items;
   });
+  const [archivedItems, setArchivedItems] = useState(() => {
+    const stored = localStorage.getItem('woody-proc:archived-items');
+    if (stored) {
+      try { return JSON.parse(stored); } catch (e) {}
+    }
+    return [];
+  });
   const [active, setActive] = useState('dashboard');
   const [collapsed, setCollapsed] = useState(false);
   const [openItemId, setOpenItemId] = useState(null);
@@ -44,6 +51,7 @@ function App() {
   useEffect(() => { localStorage.setItem('woody-proc:collapsed', collapsed?'1':'0'); }, [collapsed]);
   useEffect(() => { localStorage.setItem('woody-proc:openItem', openItemId || ''); }, [openItemId]);
   useEffect(() => { localStorage.setItem('woody-proc:items', JSON.stringify(items)); }, [items]);
+  useEffect(() => { localStorage.setItem('woody-proc:archived-items', JSON.stringify(archivedItems)); }, [archivedItems]);
 
   useEffect(() => {
     if (!toast) return;
@@ -85,6 +93,29 @@ function App() {
       })};
     }));
   };
+
+  const archiveAllItems = () => {
+    const stamped = items.map(it => ({ ...it, archivedAt: Date.now() }));
+    setArchivedItems(prev => [...stamped, ...prev]);
+    setItems([]);
+    setOpenItemId(null);
+  };
+
+  const restoreArchivedItem = (id) => {
+    const item = archivedItems.find(it => it.id === id);
+    if (!item) return;
+    const { archivedAt, ...rest } = item;
+    setItems(prev => [...prev, rest]);
+    setArchivedItems(prev => prev.filter(it => it.id !== id));
+  };
+
+  const restoreAllArchived = () => {
+    const restored = archivedItems.map(({ archivedAt, ...rest }) => rest);
+    setItems(prev => [...prev, ...restored]);
+    setArchivedItems([]);
+  };
+
+  const clearArchive = () => setArchivedItems([]);
 
   const saveEdit = (draft) => {
     if (draft.id) {
@@ -132,7 +163,7 @@ function App() {
         <div className="page">
           {active === 'dashboard' && <DashboardPage items={items} reports={reports} gotoItem={(id)=>{ setActive('items'); setOpenItemId(id); }} gotoTab={setActive}/>}
 
-          {active === 'items' && !openItem && <ItemsPage items={items} reports={reports} gotoItem={setOpenItemId} openNew={()=>setEditing({ name:'', sku:'', category:'OS&E', subcategory:'Bar Tools', caseSize:12, unitCost:null, shippingCost:null, shippingType:'flat', supplier:'', supplierContact:'', leadTime:14 })} onImport={addItems} onToast={setToast}/>}
+          {active === 'items' && !openItem && <ItemsPage items={items} reports={reports} gotoItem={setOpenItemId} openNew={()=>setEditing({ name:'', sku:'', category:'OS&E', subcategory:'Bar Tools', caseSize:12, unitCost:null, shippingCost:null, shippingType:'flat', supplier:'', supplierContact:'', leadTime:14 })} onImport={addItems} onToast={setToast} onArchiveAll={archiveAllItems}/>}
 
           {active === 'items' && openItem && (
             <ItemDetail
@@ -148,7 +179,9 @@ function App() {
 
           {active === 'orders' && <OrdersPage items={items} reports={reports} recentPOs={SEED_DATA.recentPOs}/>}
 
-          {(active === 'venues' || active === 'suppliers' || active === 'history') && (
+          {active === 'history' && <HistoryPage archivedItems={archivedItems} recentPOs={SEED_DATA.recentPOs} onRestore={restoreArchivedItem} onRestoreAll={restoreAllArchived} onClearArchive={clearArchive} onToast={setToast}/>}
+
+          {(active === 'venues' || active === 'suppliers') && (
             <ComingSoonPage title={titles[active]} active={active} items={items}/>
           )}
         </div>
